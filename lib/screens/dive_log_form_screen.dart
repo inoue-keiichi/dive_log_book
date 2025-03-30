@@ -3,8 +3,58 @@ import 'package:flutter_form_builder/flutter_form_builder.dart';
 import 'package:flutter_hooks/flutter_hooks.dart';
 import 'package:intl/intl.dart';
 
+import '../hooks/form_hooks.dart';
 import '../models/dive_log.dart';
 import '../services/database_service.dart';
+
+// 数値バリデーション用のカスタムフック
+String? useNumericValidator(
+  String? value, {
+  double? min,
+  double? max,
+  String? minErrorMessage,
+  String? maxErrorMessage,
+}) {
+  if (value == null || value.isEmpty) {
+    return null; // 未入力はOK
+  }
+  if (double.tryParse(value) == null) {
+    return '数値を入力してください';
+  }
+
+  final numValue = double.parse(value);
+
+  if (max != null && numValue > max) {
+    return maxErrorMessage ?? '$max以下の数値を入力してください';
+  }
+
+  if (min != null && numValue < min) {
+    return minErrorMessage ?? '$min以上の数値を入力してください';
+  }
+
+  return null;
+}
+
+// 時間フォーマットバリデーション用のカスタムフック
+String? useTimeFormatValidator(String? value) {
+  if (value == null || value.isEmpty) {
+    return null; // 未入力はOK
+  }
+  if (!RegExp(r'^([0-1]?[0-9]|2[0-3]):[0-5][0-9]$').hasMatch(value)) {
+    return '時間のフォーマットを HH:mm にしてください';
+  }
+  return null;
+}
+
+// ローディング状態を管理するカスタムフック
+ValueNotifier<bool> useLoading() {
+  return useState<bool>(false);
+}
+
+// 日付フォーマッターを提供するカスタムフック
+DateFormat useDateFormat(String format) {
+  return useMemoized(() => DateFormat(format), [format]);
+}
 
 class DiveLogFormScreen extends HookWidget {
   final DiveLog? diveLog;
@@ -13,12 +63,48 @@ class DiveLogFormScreen extends HookWidget {
 
   @override
   Widget build(BuildContext context) {
-    final formKey = GlobalKey<FormBuilderState>();
-    final isLoading = useState<bool>(false);
-    final databaseService = DatabaseService();
+    // React Hooksスタイルで状態を管理
+    final formKey = useMemoized(() => GlobalKey<FormBuilderState>());
+    final isLoading = useLoading();
+    final databaseService = useMemoized(() => DatabaseService());
+    final dateFormat = useDateFormat('yyyy-MM-dd');
 
-    // 日付フォーマッター
-    final dateFormat = DateFormat('yyyy-MM-dd');
+    // 初期値を計算
+    final initialValues = useMemoized(
+      () => {
+        'date':
+            diveLog?.date != null
+                ? DateTime.parse(diveLog!.date)
+                : DateTime.now(),
+        'place': diveLog?.place ?? '',
+        'point': diveLog?.point ?? '',
+        'divingStartTime': diveLog?.divingStartTime ?? '',
+        'divingEndTime': diveLog?.divingEndTime ?? '',
+        'averageDepth': diveLog?.averageDepth?.toString() ?? '',
+        'maxDepth': diveLog?.maxDepth?.toString() ?? '',
+        'tankStartPressure': diveLog?.tankStartPressure?.toString() ?? '',
+        'tankEndPressure': diveLog?.tankEndPressure?.toString() ?? '',
+        'tankKind': diveLog?.tankKind?.name ?? '',
+        'suit': diveLog?.suit?.name ?? '',
+        'weight': diveLog?.weight?.toString() ?? '',
+        'weather': diveLog?.weather?.name ?? '',
+        'temperature': diveLog?.temperature?.toString() ?? '',
+        'waterTemperature': diveLog?.waterTemperature?.toString() ?? '',
+        'transparency': diveLog?.transparency?.toString() ?? '',
+        'memo': diveLog?.memo ?? '',
+      },
+      [diveLog],
+    );
+
+    // フォーム送信ハンドラー
+    final handleSubmit = useSubmitHandler(
+      formKey: formKey,
+      isLoading: isLoading,
+      diveLog: diveLog,
+      databaseService: databaseService,
+      dateFormat: dateFormat,
+      context: context,
+    );
 
     return Scaffold(
       appBar: AppBar(
@@ -28,38 +114,16 @@ class DiveLogFormScreen extends HookWidget {
           onPressed: () => Navigator.pop(context),
         ),
       ),
-      body:
-          isLoading.value
+      body: ValueListenableBuilder<bool>(
+        valueListenable: isLoading,
+        builder: (context, loading, _) {
+          return loading
               ? const Center(child: CircularProgressIndicator())
               : SingleChildScrollView(
                 padding: const EdgeInsets.all(16.0),
                 child: FormBuilder(
                   key: formKey,
-                  initialValue: {
-                    'date':
-                        diveLog?.date != null
-                            ? DateTime.parse(diveLog!.date)
-                            : DateTime.now(),
-                    'place': diveLog?.place ?? '',
-                    'point': diveLog?.point ?? '',
-                    'divingStartTime': diveLog?.divingStartTime ?? '',
-                    'divingEndTime': diveLog?.divingEndTime ?? '',
-                    'averageDepth': diveLog?.averageDepth?.toString() ?? '',
-                    'maxDepth': diveLog?.maxDepth?.toString() ?? '',
-                    'tankStartPressure':
-                        diveLog?.tankStartPressure?.toString() ?? '',
-                    'tankEndPressure':
-                        diveLog?.tankEndPressure?.toString() ?? '',
-                    'tankKind': diveLog?.tankKind?.name ?? '',
-                    'suit': diveLog?.suit?.name ?? '',
-                    'weight': diveLog?.weight?.toString() ?? '',
-                    'weather': diveLog?.weather?.name ?? '',
-                    'temperature': diveLog?.temperature?.toString() ?? '',
-                    'waterTemperature':
-                        diveLog?.waterTemperature?.toString() ?? '',
-                    'transparency': diveLog?.transparency?.toString() ?? '',
-                    'memo': diveLog?.memo ?? '',
-                  },
+                  initialValue: initialValues,
                   child: Column(
                     children: [
                       // 日付
@@ -104,17 +168,7 @@ class DiveLogFormScreen extends HookWidget {
                           labelText: '潜水開始時間 (HH:mm)',
                           border: OutlineInputBorder(),
                         ),
-                        validator: (value) {
-                          if (value == null || value.isEmpty) {
-                            return null; // 未入力はOK
-                          }
-                          if (!RegExp(
-                            r'^([0-1]?[0-9]|2[0-3]):[0-5][0-9]$',
-                          ).hasMatch(value)) {
-                            return '時間のフォーマットを HH:mm にしてください';
-                          }
-                          return null;
-                        },
+                        validator: useTimeFormatValidator,
                       ),
                       const SizedBox(height: 16),
 
@@ -125,17 +179,7 @@ class DiveLogFormScreen extends HookWidget {
                           labelText: '潜水終了時間 (HH:mm)',
                           border: OutlineInputBorder(),
                         ),
-                        validator: (value) {
-                          if (value == null || value.isEmpty) {
-                            return null; // 未入力はOK
-                          }
-                          if (!RegExp(
-                            r'^([0-1]?[0-9]|2[0-3]):[0-5][0-9]$',
-                          ).hasMatch(value)) {
-                            return '時間のフォーマットを HH:mm にしてください';
-                          }
-                          return null;
-                        },
+                        validator: useTimeFormatValidator,
                       ),
                       const SizedBox(height: 16),
 
@@ -147,22 +191,9 @@ class DiveLogFormScreen extends HookWidget {
                           border: OutlineInputBorder(),
                         ),
                         keyboardType: TextInputType.number,
-                        validator: (value) {
-                          if (value == null || value.isEmpty) {
-                            return null; // 未入力はOK
-                          }
-                          if (double.tryParse(value) == null) {
-                            return '数値を入力してください';
-                          }
-                          final numValue = double.parse(value);
-                          if (numValue > 100) {
-                            return '100以下の数値を入力してください';
-                          }
-                          if (numValue < 0) {
-                            return '0以上の数値を入力してください';
-                          }
-                          return null;
-                        },
+                        validator:
+                            (value) =>
+                                useNumericValidator(value, min: 0, max: 100),
                       ),
                       const SizedBox(height: 16),
 
@@ -174,22 +205,9 @@ class DiveLogFormScreen extends HookWidget {
                           border: OutlineInputBorder(),
                         ),
                         keyboardType: TextInputType.number,
-                        validator: (value) {
-                          if (value == null || value.isEmpty) {
-                            return null; // 未入力はOK
-                          }
-                          if (double.tryParse(value) == null) {
-                            return '数値を入力してください';
-                          }
-                          final numValue = double.parse(value);
-                          if (numValue > 100) {
-                            return '100以下の数値を入力してください';
-                          }
-                          if (numValue < 0) {
-                            return '0以上の数値を入力してください';
-                          }
-                          return null;
-                        },
+                        validator:
+                            (value) =>
+                                useNumericValidator(value, min: 0, max: 100),
                       ),
                       const SizedBox(height: 16),
 
@@ -201,22 +219,9 @@ class DiveLogFormScreen extends HookWidget {
                           border: OutlineInputBorder(),
                         ),
                         keyboardType: TextInputType.number,
-                        validator: (value) {
-                          if (value == null || value.isEmpty) {
-                            return null; // 未入力はOK
-                          }
-                          if (double.tryParse(value) == null) {
-                            return '数値を入力してください';
-                          }
-                          final numValue = double.parse(value);
-                          if (numValue > 500) {
-                            return '500以下の数値を入力してください';
-                          }
-                          if (numValue < 0) {
-                            return '0以上の数値を入力してください';
-                          }
-                          return null;
-                        },
+                        validator:
+                            (value) =>
+                                useNumericValidator(value, min: 0, max: 500),
                       ),
                       const SizedBox(height: 16),
 
@@ -228,22 +233,9 @@ class DiveLogFormScreen extends HookWidget {
                           border: OutlineInputBorder(),
                         ),
                         keyboardType: TextInputType.number,
-                        validator: (value) {
-                          if (value == null || value.isEmpty) {
-                            return null; // 未入力はOK
-                          }
-                          if (double.tryParse(value) == null) {
-                            return '数値を入力してください';
-                          }
-                          final numValue = double.parse(value);
-                          if (numValue > 500) {
-                            return '500以下の数値を入力してください';
-                          }
-                          if (numValue < 0) {
-                            return '0以上の数値を入力してください';
-                          }
-                          return null;
-                        },
+                        validator:
+                            (value) =>
+                                useNumericValidator(value, min: 0, max: 500),
                       ),
                       const SizedBox(height: 16),
 
@@ -275,22 +267,9 @@ class DiveLogFormScreen extends HookWidget {
                           border: OutlineInputBorder(),
                         ),
                         keyboardType: TextInputType.number,
-                        validator: (value) {
-                          if (value == null || value.isEmpty) {
-                            return null; // 未入力はOK
-                          }
-                          if (double.tryParse(value) == null) {
-                            return '数値を入力してください';
-                          }
-                          final numValue = double.parse(value);
-                          if (numValue > 50) {
-                            return '50以下の数値を入力してください';
-                          }
-                          if (numValue < 0) {
-                            return '0以上の数値を入力してください';
-                          }
-                          return null;
-                        },
+                        validator:
+                            (value) =>
+                                useNumericValidator(value, min: 0, max: 50),
                       ),
                       const SizedBox(height: 16),
 
@@ -354,22 +333,9 @@ class DiveLogFormScreen extends HookWidget {
                           border: OutlineInputBorder(),
                         ),
                         keyboardType: TextInputType.number,
-                        validator: (value) {
-                          if (value == null || value.isEmpty) {
-                            return null; // 未入力はOK
-                          }
-                          if (double.tryParse(value) == null) {
-                            return '数値を入力してください';
-                          }
-                          final numValue = double.parse(value);
-                          if (numValue > 100) {
-                            return '100以下の数値を入力してください';
-                          }
-                          if (numValue < -100) {
-                            return '-100以上の数値を入力してください';
-                          }
-                          return null;
-                        },
+                        validator:
+                            (value) =>
+                                useNumericValidator(value, min: -100, max: 100),
                       ),
                       const SizedBox(height: 16),
 
@@ -381,22 +347,9 @@ class DiveLogFormScreen extends HookWidget {
                           border: OutlineInputBorder(),
                         ),
                         keyboardType: TextInputType.number,
-                        validator: (value) {
-                          if (value == null || value.isEmpty) {
-                            return null; // 未入力はOK
-                          }
-                          if (double.tryParse(value) == null) {
-                            return '数値を入力してください';
-                          }
-                          final numValue = double.parse(value);
-                          if (numValue > 50) {
-                            return '50以下の数値を入力してください';
-                          }
-                          if (numValue < -10) {
-                            return '-10以上の数値を入力してください';
-                          }
-                          return null;
-                        },
+                        validator:
+                            (value) =>
+                                useNumericValidator(value, min: -10, max: 50),
                       ),
                       const SizedBox(height: 16),
 
@@ -408,22 +361,14 @@ class DiveLogFormScreen extends HookWidget {
                           border: OutlineInputBorder(),
                         ),
                         keyboardType: TextInputType.number,
-                        validator: (value) {
-                          if (value == null || value.isEmpty) {
-                            return null; // 未入力はOK
-                          }
-                          if (double.tryParse(value) == null) {
-                            return '数値を入力してください';
-                          }
-                          final numValue = double.parse(value);
-                          if (numValue > 50) {
-                            return '100以下の数値を入力してください';
-                          }
-                          if (numValue < -10) {
-                            return '0以上の数値を入力してください';
-                          }
-                          return null;
-                        },
+                        validator:
+                            (value) => useNumericValidator(
+                              value,
+                              min: 0,
+                              max: 50,
+                              minErrorMessage: '0以上の数値を入力してください',
+                              maxErrorMessage: '50以下の数値を入力してください',
+                            ),
                       ),
                       const SizedBox(height: 16),
 
@@ -443,168 +388,16 @@ class DiveLogFormScreen extends HookWidget {
                       SizedBox(
                         width: double.infinity,
                         child: ElevatedButton(
-                          onPressed: () async {
-                            if (formKey.currentState?.saveAndValidate() ??
-                                false) {
-                              final formData = formKey.currentState!.value;
-                              isLoading.value = true;
-
-                              // フォームデータからDiveLogオブジェクトを作成
-                              final newDiveLog = DiveLog(
-                                id: diveLog?.id,
-                                date:
-                                    formData['date'] is DateTime
-                                        ? dateFormat.format(
-                                          formData['date'] as DateTime,
-                                        )
-                                        : formData['date'] as String,
-                                place: formData['place'] as String?,
-                                point: formData['point'] as String?,
-                                divingStartTime:
-                                    formData['divingStartTime'] as String?,
-                                divingEndTime:
-                                    formData['divingEndTime'] as String?,
-                                averageDepth:
-                                    formData['averageDepth'] != null &&
-                                            formData['averageDepth']
-                                                .toString()
-                                                .isNotEmpty
-                                        ? double.parse(
-                                          formData['averageDepth'].toString(),
-                                        )
-                                        : null,
-                                maxDepth:
-                                    formData['maxDepth'] != null &&
-                                            formData['maxDepth']
-                                                .toString()
-                                                .isNotEmpty
-                                        ? double.parse(
-                                          formData['maxDepth'].toString(),
-                                        )
-                                        : null,
-                                tankStartPressure:
-                                    formData['tankStartPressure'] != null &&
-                                            formData['tankStartPressure']
-                                                .toString()
-                                                .isNotEmpty
-                                        ? double.parse(
-                                          formData['tankStartPressure']
-                                              .toString(),
-                                        )
-                                        : null,
-                                tankEndPressure:
-                                    formData['tankEndPressure'] != null &&
-                                            formData['tankEndPressure']
-                                                .toString()
-                                                .isNotEmpty
-                                        ? double.parse(
-                                          formData['tankEndPressure']
-                                              .toString(),
-                                        )
-                                        : null,
-                                tankKind:
-                                    formData['tankKind'] != null &&
-                                            formData['tankKind']
-                                                .toString()
-                                                .isNotEmpty
-                                        ? TankKind.values.firstWhere(
-                                          (e) => e.name == formData['tankKind'],
-                                          orElse: () => TankKind.STEEL,
-                                        )
-                                        : null,
-                                suit:
-                                    formData['suit'] != null &&
-                                            formData['suit']
-                                                .toString()
-                                                .isNotEmpty
-                                        ? Suit.values.firstWhere(
-                                          (e) => e.name == formData['suit'],
-                                          orElse: () => Suit.WET,
-                                        )
-                                        : null,
-                                weight:
-                                    formData['weight'] != null &&
-                                            formData['weight']
-                                                .toString()
-                                                .isNotEmpty
-                                        ? double.parse(
-                                          formData['weight'].toString(),
-                                        )
-                                        : null,
-                                weather:
-                                    formData['weather'] != null &&
-                                            formData['weather']
-                                                .toString()
-                                                .isNotEmpty
-                                        ? Weather.values.firstWhere(
-                                          (e) => e.name == formData['weather'],
-                                          orElse: () => Weather.SUNNY,
-                                        )
-                                        : null,
-                                temperature:
-                                    formData['temperature'] != null &&
-                                            formData['temperature']
-                                                .toString()
-                                                .isNotEmpty
-                                        ? double.parse(
-                                          formData['temperature'].toString(),
-                                        )
-                                        : null,
-                                waterTemperature:
-                                    formData['waterTemperature'] != null &&
-                                            formData['waterTemperature']
-                                                .toString()
-                                                .isNotEmpty
-                                        ? double.parse(
-                                          formData['waterTemperature']
-                                              .toString(),
-                                        )
-                                        : null,
-                                transparency:
-                                    formData['transparency'] != null &&
-                                            formData['transparency']
-                                                .toString()
-                                                .isNotEmpty
-                                        ? double.parse(
-                                          formData['transparency'].toString(),
-                                        )
-                                        : null,
-                                memo: formData['memo'] as String?,
-                              );
-
-                              try {
-                                if (diveLog == null) {
-                                  // 新規作成
-                                  await databaseService.insertDiveLog(
-                                    newDiveLog,
-                                  );
-                                } else {
-                                  // 更新
-                                  await databaseService.updateDiveLog(
-                                    newDiveLog,
-                                  );
-                                }
-                                isLoading.value = false;
-                                if (context.mounted) {
-                                  Navigator.pop(context, true);
-                                }
-                              } catch (e) {
-                                isLoading.value = false;
-                                if (context.mounted) {
-                                  ScaffoldMessenger.of(context).showSnackBar(
-                                    SnackBar(content: Text('エラーが発生しました: $e')),
-                                  );
-                                }
-                              }
-                            }
-                          },
+                          onPressed: handleSubmit,
                           child: Text(diveLog == null ? '追加' : '上書き'),
                         ),
                       ),
                     ],
                   ),
                 ),
-              ),
+              );
+        },
+      ),
     );
   }
 }

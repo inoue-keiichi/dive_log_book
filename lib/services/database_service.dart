@@ -1,4 +1,5 @@
 import 'package:path/path.dart';
+import 'package:path_provider/path_provider.dart';
 import 'package:sqflite/sqflite.dart';
 
 import '../models/dive_log.dart';
@@ -13,6 +14,13 @@ class DatabaseService {
 
   DatabaseService._internal();
 
+  Future<String> getDbPath() async {
+    final dbDirectory = await getApplicationSupportDirectory();
+    final dbFilePath = dbDirectory.path;
+    final path = join(dbFilePath, 'sample.db');
+    return path;
+  }
+
   Future<Database> get database async {
     if (_database != null) return _database!;
     _database = await _initDatabase();
@@ -20,7 +28,7 @@ class DatabaseService {
   }
 
   Future<Database> _initDatabase() async {
-    String path = join(await getDatabasesPath(), 'dive_log_book.db');
+    String path = join(await getDbPath(), 'dive_log_book.db');
     return await openDatabase(path, version: 1, onCreate: _onCreate);
   }
 

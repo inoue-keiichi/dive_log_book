@@ -1,138 +1,172 @@
 import 'package:dive_log_book/models/dive_log.dart';
 import 'package:dive_log_book/screens/dive_log_form_screen.dart';
-import 'package:dive_log_book/services/database_service.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_form_builder/flutter_form_builder.dart';
 import 'package:flutter_test/flutter_test.dart';
 import 'package:intl/intl.dart';
-import 'package:path/path.dart';
 import 'package:sqflite_common_ffi/sqflite_ffi.dart';
 
-// テスト用のDatabaseServiceクラス
-class TestDatabaseService implements DatabaseService {
-  final String testDatabasePath;
-  Database? _database;
+// // テスト用のDatabaseServiceクラス
+// class TestDatabaseService implements DatabaseService {
+//   final String testDatabasePath;
+//   Database? _database;
 
-  TestDatabaseService(this.testDatabasePath);
+//   TestDatabaseService(this.testDatabasePath);
 
-  @override
-  Future<Database> get database async {
-    if (_database != null) return _database!;
-    _database = await _initDatabase();
-    return _database!;
-  }
+//   @override
+//   Future<Database> get database async {
+//     if (_database != null) return _database!;
+//     _database = await _initDatabase();
+//     return _database!;
+//   }
 
-  Future<Database> _initDatabase() async {
-    return await openDatabase(
-      testDatabasePath,
-      version: 1,
-      onCreate: (db, version) async {
-        await db.execute('''
-          CREATE TABLE dive_logs(
-            id INTEGER PRIMARY KEY AUTOINCREMENT,
-            date TEXT NOT NULL,
-            place TEXT,
-            point TEXT,
-            divingStartTime TEXT,
-            divingEndTime TEXT,
-            averageDepth REAL,
-            maxDepth REAL,
-            tankStartPressure REAL,
-            tankEndPressure REAL,
-            tankKind TEXT,
-            suit TEXT,
-            weight REAL,
-            weather TEXT,
-            temperature REAL,
-            waterTemperature REAL,
-            transparency REAL,
-            memo TEXT
-          )
-        ''');
-      },
-    );
-  }
+//   Future<Database> _initDatabase() async {
+//     return await openDatabase(
+//       testDatabasePath,
+//       version: 1,
+//       onCreate: (db, version) async {
+//         await db.execute('''
+//           CREATE TABLE dive_logs(
+//             id INTEGER PRIMARY KEY AUTOINCREMENT,
+//             date TEXT NOT NULL,
+//             place TEXT,
+//             point TEXT,
+//             divingStartTime TEXT,
+//             divingEndTime TEXT,
+//             averageDepth REAL,
+//             maxDepth REAL,
+//             tankStartPressure REAL,
+//             tankEndPressure REAL,
+//             tankKind TEXT,
+//             suit TEXT,
+//             weight REAL,
+//             weather TEXT,
+//             temperature REAL,
+//             waterTemperature REAL,
+//             transparency REAL,
+//             memo TEXT
+//           )
+//         ''');
+//       },
+//     );
+//   }
 
-  @override
-  Future<int> insertDiveLog(DiveLog diveLog) async {
-    final db = await database;
-    return await db.insert(
-      'dive_logs',
-      diveLog.toMap(),
-      conflictAlgorithm: ConflictAlgorithm.replace,
-    );
-  }
+//   @override
+//   Future<int> insertDiveLog(DiveLog diveLog) async {
+//     final db = await database;
+//     return await db.insert(
+//       'dive_logs',
+//       diveLog.toMap(),
+//       conflictAlgorithm: ConflictAlgorithm.replace,
+//     );
+//   }
 
-  @override
-  Future<int> updateDiveLog(DiveLog diveLog) async {
-    final db = await database;
-    return await db.update(
-      'dive_logs',
-      diveLog.toMap(),
-      where: 'id = ?',
-      whereArgs: [diveLog.id],
-    );
-  }
+//   @override
+//   Future<int> updateDiveLog(DiveLog diveLog) async {
+//     final db = await database;
+//     return await db.update(
+//       'dive_logs',
+//       diveLog.toMap(),
+//       where: 'id = ?',
+//       whereArgs: [diveLog.id],
+//     );
+//   }
 
-  @override
-  Future<int> deleteDiveLog(int id) async {
-    final db = await database;
-    return await db.delete('dive_logs', where: 'id = ?', whereArgs: [id]);
-  }
+//   @override
+//   Future<int> deleteDiveLog(int id) async {
+//     final db = await database;
+//     return await db.delete('dive_logs', where: 'id = ?', whereArgs: [id]);
+//   }
 
-  @override
-  Future<List<DiveLog>> getDiveLogs() async {
-    final db = await database;
-    final List<Map<String, dynamic>> maps = await db.query(
-      'dive_logs',
-      orderBy: 'date DESC',
-    );
-    return List.generate(maps.length, (i) {
-      return DiveLog.fromMap(maps[i]);
-    });
-  }
+//   @override
+//   Future<List<DiveLog>> getDiveLogs() async {
+//     final db = await database;
+//     final List<Map<String, dynamic>> maps = await db.query(
+//       'dive_logs',
+//       orderBy: 'date DESC',
+//     );
+//     return List.generate(maps.length, (i) {
+//       return DiveLog.fromMap(maps[i]);
+//     });
+//   }
 
-  @override
-  Future<DiveLog?> getDiveLog(int id) async {
-    final db = await database;
-    final List<Map<String, dynamic>> maps = await db.query(
-      'dive_logs',
-      where: 'id = ?',
-      whereArgs: [id],
-    );
+//   @override
+//   Future<DiveLog?> getDiveLog(int id) async {
+//     final db = await database;
+//     final List<Map<String, dynamic>> maps = await db.query(
+//       'dive_logs',
+//       where: 'id = ?',
+//       whereArgs: [id],
+//     );
 
-    if (maps.isNotEmpty) {
-      return DiveLog.fromMap(maps.first);
-    }
-    return null;
-  }
-}
+//     if (maps.isNotEmpty) {
+//       return DiveLog.fromMap(maps.first);
+//     }
+//     return null;
+//   }
+// }
 
 void main() {
   // テスト実行前の初期化
-  late String testDatabasePath;
+  late Database db;
 
   setUpAll(() async {
     TestWidgetsFlutterBinding.ensureInitialized();
     // SQLite FFIの初期化
     sqfliteFfiInit();
     // テスト用のデータベースファクトリを設定
-    databaseFactory = databaseFactoryFfi;
+    // databaseFactory = databaseFactoryFfi;
+    db = await databaseFactoryFfi.openDatabase(inMemoryDatabasePath);
 
-    // テスト用のデータベースファイルパスを設定
-    testDatabasePath = join(await getDatabasesPath(), 'test_dive_log_book.db');
+    await db.execute('''
+      CREATE TABLE dive_logs(
+        id INTEGER PRIMARY KEY AUTOINCREMENT,
+        date TEXT NOT NULL,
+        place TEXT,
+        point TEXT,
+        divingStartTime TEXT,
+        divingEndTime TEXT,
+        averageDepth REAL,
+        maxDepth REAL,
+        tankStartPressure REAL,
+        tankEndPressure REAL,
+        tankKind TEXT,
+        suit TEXT,
+        weight REAL,
+        weather TEXT,
+        temperature REAL,
+        waterTemperature REAL,
+        transparency REAL,
+        memo TEXT
+      )
+    ''');
 
+    // // テスト用のデータベースファイルパスを設定
+    // testDatabasePath = join(await getDatabasesPath(), 'test_dive_log_book.db');
+    // TestWidgetsFlutterBinding.ensureInitialized();
+    // const MethodChannel channel = MethodChannel(
+    //   'plugins.flutter.io/path_provider',
+    // );
+    // channel.setMockMethodCallHandler((methodCall) async {
+    //   return ".";
+    // });
+
+    // // データベースの初期化
+    // databaseService = DatabaseService();
+    // await databaseService.database;
+    // dbPath = await databaseService.getDbPath();
     // // テスト前にデータベースファイルが存在する場合は削除
-    // if (await databaseExists(testDatabasePath)) {
-    //   await deleteDatabase(testDatabasePath);
+    // if (await databaseExists(dbPath)) {
+    //   await deleteDatabase(dbPath);
     // }
   });
 
   // tearDownAll(() async {
-  //   // テスト後にデータベースファイルを削除
-  //   if (await databaseExists(testDatabasePath)) {
-  //     await deleteDatabase(testDatabasePath);
-  //   }
+  //   // await db.close();
+  //   // // テスト後にデータベースファイルを削除
+  //   // if (await databaseExists(dbPath)) {
+  //   //   await deleteDatabase(dbPath);
+  //   // }
   // });
 
   // 固定の日付を使用するためのセットアップ
@@ -661,60 +695,61 @@ void main() {
       expect(find.text('100以下の数値を入力してください'), findsOneWidget);
     });
 
-    // testWidgets('新規ダイブログの追加が正しく機能する', (WidgetTester tester) async {
-    //   // テスト用のDatabaseServiceを作成
-    //   final testService = TestDatabaseService(testDatabasePath);
+    testWidgets('新規ダイブログの追加が正しく機能する', (WidgetTester tester) async {
+      print("hoge7");
 
-    //   // テスト用のDatabaseServiceを使用するためのProviderを作成
-    //   final testWidget = MaterialApp(
-    //     home: DatabaseServiceProvider(
-    //       databaseService: testService,
-    //       child: DiveLogFormScreen(),
-    //     ),
-    //   );
+      // テスト対象のウィジェットをビルド
+      // await tester.pumpWidget(testWidget);
+      await tester.pumpWidget(
+        MaterialApp(home: DiveLogFormScreen()),
+        duration: Duration(milliseconds: 3000),
+      );
 
-    //   // テスト対象のウィジェットをビルド
-    //   await tester.pumpWidget(testWidget);
+      print("hoge2");
+      // フォームに値を入力
+      await fillFormFields(tester);
 
-    //   // フォームに値を入力
-    //   await fillFormFields(tester);
+      // 追加ボタンが見えるようにスクロール
+      // await tester.dragUntilVisible(
+      //   find.text('追加'),
+      //   find.byType(SingleChildScrollView),
+      //   const Offset(0, -500),
+      // );
+      // await tester.pumpAndSettle();
 
-    //   // 追加ボタンが見えるようにスクロール
-    //   await tester.dragUntilVisible(
-    //     find.text('追加'),
-    //     find.byType(SingleChildScrollView),
-    //     const Offset(0, -500),
-    //   );
-    //   await tester.pumpAndSettle();
+      // 送信ボタンをタップ
+      print("hoge1");
+      await tester.tap(find.text('追加'));
+      await tester.pump(const Duration(milliseconds: 3000));
 
-    //   // 送信ボタンをタップ
-    //   await tester.tap(find.text('追加'));
-    //   await tester.pump(const Duration(milliseconds: 3000));
+      print("hoge0");
+      print(await db.query('dive_logs'));
+      // データベースにデータが追加されたことを確認
+      final result = await db.query('dive_logs');
+      // expect(result.length, 1);
+      print("hoge");
+      await db.close();
+      print(result);
 
-    //   // データベースにデータが追加されたことを確認
-    //   final db = await testService.database;
-    //   final result = await db.query('dive_logs');
-    //   expect(result.length, 1);
-
-    //   // 追加されたデータの内容を詳細に検証
-    //   final insertedData = result.first;
-    //   expect(insertedData['place'], 'Ose');
-    //   expect(insertedData['point'], 'Wannai');
-    //   expect(insertedData['divingStartTime'], '09:30');
-    //   expect(insertedData['divingEndTime'], '10:00');
-    //   expect(insertedData['averageDepth'], 18.0);
-    //   expect(insertedData['maxDepth'], 25.0);
-    //   expect(insertedData['tankStartPressure'], 200.0);
-    //   expect(insertedData['tankEndPressure'], 50.0);
-    //   expect(insertedData['tankKind'], 'STEEL');
-    //   expect(insertedData['suit'], 'WET');
-    //   expect(insertedData['weight'], 5.0);
-    //   expect(insertedData['weather'], 'SUNNY');
-    //   expect(insertedData['temperature'], 35.0);
-    //   expect(insertedData['waterTemperature'], 28.0);
-    //   expect(insertedData['transparency'], 8.0);
-    //   expect(insertedData['memo'], 'Good Diving!!');
-    // });
+      // // 追加されたデータの内容を詳細に検証
+      // final insertedData = result.first;
+      // expect(insertedData['place'], 'Ose');
+      // expect(insertedData['point'], 'Wannai');
+      // expect(insertedData['divingStartTime'], '09:30');
+      // expect(insertedData['divingEndTime'], '10:00');
+      // expect(insertedData['averageDepth'], 18.0);
+      // expect(insertedData['maxDepth'], 25.0);
+      // expect(insertedData['tankStartPressure'], 200.0);
+      // expect(insertedData['tankEndPressure'], 50.0);
+      // expect(insertedData['tankKind'], 'STEEL');
+      // expect(insertedData['suit'], 'WET');
+      // expect(insertedData['weight'], 5.0);
+      // expect(insertedData['weather'], 'SUNNY');
+      // expect(insertedData['temperature'], 35.0);
+      // expect(insertedData['waterTemperature'], 28.0);
+      // expect(insertedData['transparency'], 8.0);
+      // expect(insertedData['memo'], 'Good Diving!!');
+    });
 
     // testWidgets('既存ダイブログの更新が正しく機能する', (WidgetTester tester) async {
     //   Database? db;
