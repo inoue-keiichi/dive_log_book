@@ -19,6 +19,7 @@ class MockNavigatorObserver extends NavigatorObserver {
 
   @override
   void didPop(Route<dynamic> route, Route<dynamic>? previousRoute) {
+    print("hello!");
     super.didPop(route, previousRoute);
     popCalled = true;
     popResult = route.settings.arguments;
@@ -245,7 +246,7 @@ void main() {
       // テスト対象のウィジェットをビルド
       await tester.pumpWidget(
         MaterialApp(
-          navigatorObservers: [mockNavigatorObserver],
+          // navigatorObservers: [mockNavigatorObserver],
           home: DiveLogFormScreen(),
         ),
       );
@@ -313,7 +314,7 @@ void main() {
       // テスト対象のウィジェットをビルド
       await tester.pumpWidget(
         MaterialApp(
-          navigatorObservers: [mockNavigatorObserver],
+          // navigatorObservers: [mockNavigatorObserver],
           home: DiveLogFormScreen(diveLog: diveLog),
         ),
       );
@@ -499,145 +500,223 @@ void main() {
       expect(find.text('上書き'), findsOneWidget);
     });
 
-    testWidgets('フォーム入力と検証が正しく機能する', (WidgetTester tester) async {
-      // テスト対象のウィジェットをビルド
-      await tester.pumpWidget(
-        MaterialApp(
-          navigatorObservers: [mockNavigatorObserver],
-          home: DiveLogFormScreen(),
-        ),
-      );
+    group('フォーム入力と検証が正しく機能する', () {
+      // テストケースの定義
+      final testCases = [
+        // divingStartTimeのテストケース
+        {
+          'name': "divingStartTimeのテストケース",
+          'fieldName': 'divingStartTime',
+          'fieldLabel': '潜水開始時間 (HH:mm)',
+          'invalidValue': '25:30',
+          'errorMessage': '時間のフォーマットを HH:mm にしてください',
+        },
+        // averageDepthのテストケース - 数値以外
+        {
+          'name': "averageDepthのテストケース - 数値以外",
+          'fieldName': 'averageDepth',
+          'fieldLabel': '平均水深 (m)',
+          'invalidValue': 'abc',
+          'errorMessage': '数値を入力してください',
+        },
+        // averageDepthのテストケース - 範囲外
+        {
+          'name': "averageDepthのテストケース - 範囲外",
+          'fieldName': 'averageDepth',
+          'fieldLabel': '平均水深 (m)',
+          'invalidValue': '150',
+          'errorMessage': '100以下の数値を入力してください',
+        },
+        // maxDepthのテストケース - 数値以外
+        {
+          'name': "maxDepthのテストケース - 数値以外",
+          'fieldName': 'maxDepth',
+          'fieldLabel': '最大水深 (m)',
+          'invalidValue': 'xyz',
+          'errorMessage': '数値を入力してください',
+        },
+        // maxDepthのテストケース - 範囲外
+        {
+          'name': "maxDepthのテストケース - 範囲外",
+          'fieldName': 'maxDepth',
+          'fieldLabel': '最大水深 (m)',
+          'invalidValue': '200',
+          'errorMessage': '100以下の数値を入力してください',
+        },
+      ];
 
-      // 無効な時間形式を入力
-      await tester.enterText(
-        find.byWidgetPredicate(
-          (widget) =>
-              widget is FormBuilderTextField &&
-              widget.name == 'divingStartTime',
-        ),
-        '25:30',
-      );
-      await tester.pumpAndSettle();
+      // 各テストケースを実行
+      for (final testCase in testCases) {
+        testWidgets(testCase['name'] as String, (WidgetTester tester) async {
+          await tester.pumpWidget(MaterialApp(home: DiveLogFormScreen()));
 
-      // 追加ボタンが見えるようにスクロール
-      await tester.dragUntilVisible(
-        find.text('追加'),
-        find.byType(SingleChildScrollView),
-        const Offset(0, -500),
-      );
-      await tester.pump(const Duration(milliseconds: 500));
+          final fieldName = testCase['fieldName'] as String;
+          final invalidValue = testCase['invalidValue'] as String;
+          final errorMessage = testCase['errorMessage'] as String;
 
-      // 送信ボタンをタップ
-      await tester.tap(find.text('追加'));
-      await tester.pump(const Duration(milliseconds: 500));
+          // テスト情報をログ出力
+          print(
+            'テスト実行: フィールド=$fieldName, 不正値=$invalidValue, 期待エラー=$errorMessage',
+          );
 
-      // エラーメッセージが表示されるか確認
-      // FormBuilderTextFieldのvalidatorによって表示されるエラーメッセージを検索
-      // エラーテキストを含むTextウィジェットを探す
-      expect(find.text('時間のフォーマットを HH:mm にしてください'), findsOneWidget);
+          // 無効な値を入力
+          await tester.enterText(
+            find.byWidgetPredicate(
+              (widget) =>
+                  widget is FormBuilderTextField && widget.name == fieldName,
+            ),
+            invalidValue,
+          );
+          await tester.pumpAndSettle();
 
-      // 無効な数値を入力
-      await tester.enterText(
-        find.byWidgetPredicate(
-          (widget) =>
-              widget is FormBuilderTextField && widget.name == 'averageDepth',
-        ),
-        'abc',
-      );
-      await tester.pumpAndSettle();
+          // 送信ボタンが見えるようにスクロール
+          await tester.dragUntilVisible(
+            find.widgetWithText(ElevatedButton, '追加'),
+            find.byType(SingleChildScrollView),
+            const Offset(0, -500),
+          );
+          await tester.pumpAndSettle();
 
-      // 追加ボタンが見えるようにスクロール
-      await tester.dragUntilVisible(
-        find.text('追加'),
-        find.byType(SingleChildScrollView),
-        const Offset(0, -500),
-      );
-      await tester.pump(const Duration(milliseconds: 500));
+          // 送信ボタンをタップ
+          await tester.tap(find.text('追加'));
+          await tester.pumpAndSettle();
 
-      // 送信ボタンをタップ
-      await tester.tap(find.text('追加'));
-      await tester.pumpAndSettle();
-
-      // エラーメッセージが表示されるか確認
-      expect(find.text('数値を入力してください'), findsOneWidget);
-
-      // 範囲外の数値を入力
-      await tester.enterText(
-        find.byWidgetPredicate(
-          (widget) =>
-              widget is FormBuilderTextField && widget.name == 'averageDepth',
-        ),
-        '150',
-      );
-      await tester.pumpAndSettle();
-
-      // 追加ボタンが見えるようにスクロール
-      await tester.dragUntilVisible(
-        find.text('追加'),
-        find.byType(SingleChildScrollView),
-        const Offset(0, -500),
-      );
-      await tester.pumpAndSettle();
-
-      // 送信ボタンをタップ
-      await tester.tap(find.text('追加'));
-      await tester.pumpAndSettle();
-
-      // エラーメッセージが表示されるか確認
-      // expect(find.text('100以下の数値を入力してください'), findsOneWidget);
+          // エラーメッセージが表示されるか確認
+          expect(
+            find.text(errorMessage),
+            findsOneWidget,
+            reason:
+                '$fieldNameフィールドに$invalidValueを入力した時、"$errorMessage"というエラーが表示されるべき',
+          );
+        });
+      }
     });
+    // testWidgets('フォーム入力と検証が正しく機能する - テーブル駆動テスト', (WidgetTester tester) async {
+    //   // テストケースの定義
+    //   final testCases = [
+    //     // divingStartTimeのテストケース
+    //     {
+    //       'fieldName': 'divingStartTime',
+    //       'fieldLabel': '潜水開始時間 (HH:mm)',
+    //       'invalidValue': '25:30',
+    //       'errorMessage': '時間のフォーマットを HH:mm にしてください',
+    //     },
+    //     // averageDepthのテストケース - 数値以外
+    //     {
+    //       'fieldName': 'averageDepth',
+    //       'fieldLabel': '平均水深 (m)',
+    //       'invalidValue': 'abc',
+    //       'errorMessage': '数値を入力してください',
+    //     },
+    //     // averageDepthのテストケース - 範囲外
+    //     {
+    //       'fieldName': 'averageDepth',
+    //       'fieldLabel': '平均水深 (m)',
+    //       'invalidValue': '150',
+    //       'errorMessage': '100以下の数値を入力してください',
+    //     },
+    //     // maxDepthのテストケース - 数値以外
+    //     {
+    //       'fieldName': 'maxDepth',
+    //       'fieldLabel': '最大水深 (m)',
+    //       'invalidValue': 'xyz',
+    //       'errorMessage': '数値を入力してください',
+    //     },
+    //     // maxDepthのテストケース - 範囲外
+    //     {
+    //       'fieldName': 'maxDepth',
+    //       'fieldLabel': '最大水深 (m)',
+    //       'invalidValue': '200',
+    //       'errorMessage': '100以下の数値を入力してください',
+    //     },
+    //   ];
+
+    //   // 各テストケースを実行
+    //   for (final testCase in testCases) {
+    //     // テスト対象のウィジェットをビルド
+    //     await tester.pumpWidget(MaterialApp(home: DiveLogFormScreen()));
+
+    //     final fieldName = testCase['fieldName'] as String;
+    //     final invalidValue = testCase['invalidValue'] as String;
+    //     final errorMessage = testCase['errorMessage'] as String;
+
+    //     // テスト情報をログ出力
+    //     print(
+    //       'テスト実行: フィールド=$fieldName, 不正値=$invalidValue, 期待エラー=$errorMessage',
+    //     );
+
+    //     // 無効な値を入力
+    //     await tester.enterText(
+    //       find.byWidgetPredicate(
+    //         (widget) =>
+    //             widget is FormBuilderTextField && widget.name == fieldName,
+    //       ),
+    //       invalidValue,
+    //     );
+    //     await tester.pumpAndSettle();
+
+    //     // 送信ボタンが見えるようにスクロール
+    //     await tester.dragUntilVisible(
+    //       find.widgetWithText(ElevatedButton, '追加'),
+    //       find.byType(SingleChildScrollView),
+    //       const Offset(0, -500),
+    //     );
+    //     await tester.pumpAndSettle();
+
+    //     // 送信ボタンをタップ
+    //     await tester.tap(find.text('追加'));
+    //     await tester.pumpAndSettle();
+
+    //     // エラーメッセージが表示されるか確認
+    //     expect(
+    //       find.text(errorMessage),
+    //       findsOneWidget,
+    //       reason:
+    //           '$fieldNameフィールドに$invalidValueを入力した時、"$errorMessage"というエラーが表示されるべき',
+    //     );
+    //   }
+    // });
 
     testWidgets('新規ダイブログの追加が正しく機能する', (WidgetTester tester) async {
-      // テスト対象のウィジェットをビルド
-      // await tester.pumpWidget(testWidget);
-      await tester.pumpWidget(
-        MaterialApp(
-          navigatorObservers: [mockNavigatorObserver],
-          home: DiveLogFormScreen(),
-        ),
-        duration: Duration(milliseconds: 3000),
-      );
+      await tester.runAsync(() async {
+        // テスト対象のウィジェットをビルド
+        // await tester.pumpWidget(testWidget);
+        await tester.pumpWidget(
+          MaterialApp(
+            // navigatorObservers: [mockNavigatorObserver],
+            home: DiveLogFormScreen(),
+          ),
+          duration: Duration(milliseconds: 3000),
+        );
 
-      // フォームに値を入力
-      await fillFormFields(tester);
+        // フォームに値を入力
+        await fillFormFields(tester);
 
-      // 追加ボタンが見えるようにスクロール
-      // await tester.dragUntilVisible(
-      //   find.text('追加'),
-      //   find.byType(SingleChildScrollView),
-      //   const Offset(0, -500),
-      // );
-      // await tester.pumpAndSettle();
+        // 送信ボタンをタップ
+        await tester.tap(find.text('追加'));
 
-      // 送信ボタンをタップ
-      await tester.tap(find.text('追加'));
-      await tester.pump(const Duration(milliseconds: 3000));
-
-      // データベースにデータが追加されたことを確認
-      print("hoge");
-      print(await db.query('dive_logs'));
-      // final actual = await db.query('dive_logs');
-      // expect(actual.length, 1);
-      // // await db.close();
-
-      // // 追加されたデータの内容を詳細に検証
-      // final insertedData = actual.first;
-      // expect(insertedData['place'], 'Ose');
-      // expect(insertedData['point'], 'Wannai');
-      // expect(insertedData['divingStartTime'], '09:30');
-      // expect(insertedData['divingEndTime'], '10:00');
-      // expect(insertedData['averageDepth'], 18.0);
-      // expect(insertedData['maxDepth'], 25.0);
-      // expect(insertedData['tankStartPressure'], 200.0);
-      // expect(insertedData['tankEndPressure'], 50.0);
-      // expect(insertedData['tankKind'], 'STEEL');
-      // expect(insertedData['suit'], 'WET');
-      // expect(insertedData['weight'], 5.0);
-      // expect(insertedData['weather'], 'SUNNY');
-      // expect(insertedData['temperature'], 35.0);
-      // expect(insertedData['waterTemperature'], 28.0);
-      // expect(insertedData['transparency'], 8.0);
-      // expect(insertedData['memo'], 'Good Diving!!');
+        // データベースにデータが追加されたことを確認
+        final actual = await db.query('dive_logs');
+        expect(actual.length, 1);
+        // 追加されたデータの内容を詳細に検証
+        final insertedData = actual.first;
+        expect(insertedData['place'], 'Ose');
+        expect(insertedData['point'], 'Wannai');
+        expect(insertedData['divingStartTime'], '09:30');
+        expect(insertedData['divingEndTime'], '10:00');
+        expect(insertedData['averageDepth'], 18.0);
+        expect(insertedData['maxDepth'], 25.0);
+        expect(insertedData['tankStartPressure'], 200.0);
+        expect(insertedData['tankEndPressure'], 50.0);
+        expect(insertedData['tankKind'], 'STEEL');
+        expect(insertedData['suit'], 'WET');
+        expect(insertedData['weight'], 5.0);
+        expect(insertedData['weather'], 'SUNNY');
+        expect(insertedData['temperature'], 35.0);
+        expect(insertedData['waterTemperature'], 28.0);
+        expect(insertedData['transparency'], 8.0);
+        expect(insertedData['memo'], 'Good Diving!!');
+      });
     });
 
     // testWidgets('既存ダイブログの更新が正しく機能する', (WidgetTester tester) async {
@@ -757,7 +836,7 @@ void main() {
       // テスト対象のウィジェットをビルド
       await tester.pumpWidget(
         MaterialApp(
-          navigatorObservers: [mockNavigatorObserver],
+          // navigatorObservers: [mockNavigatorObserver],
           home: DiveLogFormScreen(),
         ),
       );
