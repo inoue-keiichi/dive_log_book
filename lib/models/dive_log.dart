@@ -1,6 +1,6 @@
 class DiveLog {
   final int? id;
-  final String date;
+  final DateTime date;
   final String? place;
   final String? point;
   final String? divingStartTime;
@@ -39,61 +39,6 @@ class DiveLog {
     this.memo,
   });
 
-  // データベースから取得したMapからDiveLogオブジェクトを作成
-  factory DiveLog.fromMap(Map<String, dynamic> map) {
-    return DiveLog(
-      id: map['id'],
-      date: map['date'],
-      place: map['place'],
-      point: map['point'],
-      divingStartTime: map['divingStartTime'],
-      divingEndTime: map['divingEndTime'],
-      averageDepth:
-          map['averageDepth'] != null ? map['averageDepth'].toDouble() : null,
-      maxDepth: map['maxDepth'] != null ? map['maxDepth'].toDouble() : null,
-      tankStartPressure:
-          map['tankStartPressure'] != null
-              ? map['tankStartPressure'].toDouble()
-              : null,
-      tankEndPressure:
-          map['tankEndPressure'] != null
-              ? map['tankEndPressure'].toDouble()
-              : null,
-      tankKind:
-          map['tankKind'] != null
-              ? TankKind.values.firstWhere(
-                (e) => e.toString() == 'TankKind.${map['tankKind']}',
-                orElse: () => TankKind.STEEL,
-              )
-              : null,
-      suit:
-          map['suit'] != null
-              ? Suit.values.firstWhere(
-                (e) => e.toString() == 'Suit.${map['suit']}',
-                orElse: () => Suit.WET,
-              )
-              : null,
-      weight: map['weight'] != null ? map['weight'].toDouble() : null,
-      weather:
-          map['weather'] != null
-              ? Weather.values.firstWhere(
-                (e) => e.toString() == 'Weather.${map['weather']}',
-                orElse: () => Weather.SUNNY,
-              )
-              : null,
-      temperature:
-          map['temperature'] != null ? map['temperature'].toDouble() : null,
-      waterTemperature:
-          map['waterTemperature'] != null
-              ? map['waterTemperature'].toDouble()
-              : null,
-      transparency:
-          map['transparency'] != null ? map['transparency'].toDouble() : null,
-      memo: map['memo'],
-    );
-  }
-
-  // DiveLogオブジェクトをデータベース保存用のMapに変換
   Map<String, dynamic> toMap() {
     return {
       'id': id,
@@ -120,7 +65,7 @@ class DiveLog {
   // コピーメソッド
   DiveLog copyWith({
     int? id,
-    String? date,
+    DateTime? date,
     String? place,
     String? point,
     String? divingStartTime,

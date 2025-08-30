@@ -1,12 +1,13 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_hooks/flutter_hooks.dart';
+import 'package:intl/intl.dart';
 
-import '../models/dive_log.dart';
-import '../services/database_service.dart';
-import 'dive_log_form_screen.dart';
+import '../../models/dive_log.dart';
+import '../../services/database_service.dart';
+import '../divelog/divelog_form.dart';
 
 class DiveLogListScreen extends HookWidget {
-  const DiveLogListScreen({Key? key}) : super(key: key);
+  const DiveLogListScreen({super.key});
 
   @override
   Widget build(BuildContext context) {
@@ -37,8 +38,10 @@ class DiveLogListScreen extends HookWidget {
                       vertical: 8.0,
                     ),
                     child: ListTile(
-                      title: Text(diveLog.point ?? '名称なし'),
-                      subtitle: Text(diveLog.date),
+                      title: Text(diveLog.point ?? ''),
+                      subtitle: Text(
+                        DateFormat("yyyy-MM-dd").format(diveLog.date),
+                      ),
                       onTap: () async {
                         // 詳細・編集画面へ遷移
                         final result = await Navigator.push(

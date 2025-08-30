@@ -1,6 +1,6 @@
 import 'package:flutter/material.dart';
 
-import 'screens/dive_log_list_screen.dart';
+import 'features/divelog_list/dive_log_list_screen.dart';
 import 'services/database_service.dart';
 
 void main() async {

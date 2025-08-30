@@ -1,113 +1,32 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_form_builder/flutter_form_builder.dart';
-import 'package:flutter_hooks/flutter_hooks.dart';
 import 'package:intl/intl.dart';
 
-import '../models/dive_log.dart';
-import '../services/database_service.dart';
+import '../../models/dive_log.dart';
+import 'form_hooks.dart';
 
-// 数値バリデーション用のカスタムフック
-String? useNumericValidator(
-  String? value, {
-  double? min,
-  double? max,
-  String? minErrorMessage,
-  String? maxErrorMessage,
-}) {
-  if (value == null || value.isEmpty) {
-    return null; // 未入力はOK
-  }
-  if (double.tryParse(value) == null) {
-    return '数値を入力してください';
-  }
+class DiveLogFormTemplate extends StatelessWidget {
+  final GlobalKey<FormBuilderState> formKey;
+  final ValueNotifier<bool> isLoading;
+  final DiveLog divelog;
+  final VoidCallback handleSubmit;
 
-  final numValue = double.parse(value);
-
-  if (max != null && numValue > max) {
-    return maxErrorMessage ?? '$max以下の数値を入力してください';
-  }
-
-  if (min != null && numValue < min) {
-    return minErrorMessage ?? '$min以上の数値を入力してください';
-  }
-
-  return null;
-}
-
-// 時間フォーマットバリデーション用のカスタムフック
-String? useTimeFormatValidator(String? value) {
-  if (value == null || value.isEmpty) {
-    return null; // 未入力はOK
-  }
-  if (!RegExp(r'^([0-1]?[0-9]|2[0-3]):[0-5][0-9]$').hasMatch(value)) {
-    return '時間のフォーマットを HH:mm にしてください';
-  }
-  return null;
-}
-
-// ローディング状態を管理するカスタムフック
-ValueNotifier<bool> useLoading() {
-  return useState<bool>(false);
-}
-
-// 日付フォーマッターを提供するカスタムフック
-DateFormat useDateFormat(String format) {
-  return useMemoized(() => DateFormat(format), [format]);
-}
-
-class DiveLogFormScreen extends HookWidget {
-  final DiveLog? diveLog;
-
-  const DiveLogFormScreen({Key? key, this.diveLog}) : super(key: key);
+  const DiveLogFormTemplate({
+    super.key,
+    required this.formKey,
+    required this.isLoading,
+    required this.divelog,
+    required this.handleSubmit,
+  });
 
   @override
   Widget build(BuildContext context) {
-    // React Hooksスタイルで状態を管理
-    final formKey = useMemoized(() => GlobalKey<FormBuilderState>());
-    final isLoading = useLoading();
-    final databaseService = useMemoized(() => DatabaseService());
-    final dateFormat = useDateFormat('yyyy-MM-dd');
-
-    // 初期値を計算
-    final initialValues = useMemoized(
-      () => {
-        'date':
-            diveLog?.date != null
-                ? DateTime.parse(diveLog!.date)
-                : DateTime.now(),
-        'place': diveLog?.place ?? '',
-        'point': diveLog?.point ?? '',
-        'divingStartTime': diveLog?.divingStartTime ?? '',
-        'divingEndTime': diveLog?.divingEndTime ?? '',
-        'averageDepth': diveLog?.averageDepth?.toString() ?? '',
-        'maxDepth': diveLog?.maxDepth?.toString() ?? '',
-        'tankStartPressure': diveLog?.tankStartPressure?.toString() ?? '',
-        'tankEndPressure': diveLog?.tankEndPressure?.toString() ?? '',
-        'tankKind': diveLog?.tankKind?.name ?? '',
-        'suit': diveLog?.suit?.name ?? '',
-        'weight': diveLog?.weight?.toString() ?? '',
-        'weather': diveLog?.weather?.name ?? '',
-        'temperature': diveLog?.temperature?.toString() ?? '',
-        'waterTemperature': diveLog?.waterTemperature?.toString() ?? '',
-        'transparency': diveLog?.transparency?.toString() ?? '',
-        'memo': diveLog?.memo ?? '',
-      },
-      [diveLog],
-    );
-
-    // フォーム送信ハンドラー
-    final handleSubmit = useSubmitHandler(
-      formKey: formKey,
-      isLoading: isLoading,
-      diveLog: diveLog,
-      databaseService: databaseService,
-      dateFormat: dateFormat,
-      context: context,
-    );
+    // DiveLogをフォーム用の初期値に変換
+    final formInitialValues = divelog.toMap();
 
     return Scaffold(
       appBar: AppBar(
-        title: Text(diveLog == null ? '新規ダイブログ' : 'ダイブログ編集'),
+        title: Text(divelog.id == null ? '新規ダイブログ' : 'ダイブログ編集'),
         leading: IconButton(
           icon: const Icon(Icons.arrow_back),
           onPressed: () => Navigator.pop(context),
@@ -122,7 +41,7 @@ class DiveLogFormScreen extends HookWidget {
                 padding: const EdgeInsets.all(16.0),
                 child: FormBuilder(
                   key: formKey,
-                  initialValue: initialValues,
+                  initialValue: formInitialValues,
                   child: Column(
                     children: [
                       // 日付
@@ -388,10 +307,13 @@ class DiveLogFormScreen extends HookWidget {
                         width: double.infinity,
                         child: ElevatedButton(
                           onPressed: () {
-                            handleSubmit();
-                            Navigator.pop(context, true);
+                            if (formKey.currentState?.saveAndValidate() ??
+                                false) {
+                              handleSubmit();
+                              Navigator.pop(context, true);
+                            }
                           },
-                          child: Text(diveLog == null ? '追加' : '上書き'),
+                          child: const Text('上書き'),
                         ),
                       ),
                     ],
@@ -402,115 +324,4 @@ class DiveLogFormScreen extends HookWidget {
       ),
     );
   }
-}
-
-VoidCallback useSubmitHandler({
-  required GlobalKey<FormBuilderState> formKey,
-  required ValueNotifier<bool> isLoading,
-  required DiveLog? diveLog,
-  required DatabaseService databaseService,
-  required DateFormat dateFormat,
-  required BuildContext context,
-}) {
-  return useCallback(() async {
-    if (formKey.currentState?.saveAndValidate() ?? false) {
-      final formData = formKey.currentState!.value;
-      isLoading.value = true;
-
-      // フォームデータからDiveLogオブジェクトを作成
-      final newDiveLog = DiveLog(
-        id: diveLog?.id,
-        date:
-            formData['date'] is DateTime
-                ? dateFormat.format(formData['date'] as DateTime)
-                : formData['date'] as String,
-        place: formData['place'] as String?,
-        point: formData['point'] as String?,
-        divingStartTime: formData['divingStartTime'] as String?,
-        divingEndTime: formData['divingEndTime'] as String?,
-        averageDepth:
-            formData['averageDepth'] != null &&
-                    formData['averageDepth'].toString().isNotEmpty
-                ? double.parse(formData['averageDepth'].toString())
-                : null,
-        maxDepth:
-            formData['maxDepth'] != null &&
-                    formData['maxDepth'].toString().isNotEmpty
-                ? double.parse(formData['maxDepth'].toString())
-                : null,
-        tankStartPressure:
-            formData['tankStartPressure'] != null &&
-                    formData['tankStartPressure'].toString().isNotEmpty
-                ? double.parse(formData['tankStartPressure'].toString())
-                : null,
-        tankEndPressure:
-            formData['tankEndPressure'] != null &&
-                    formData['tankEndPressure'].toString().isNotEmpty
-                ? double.parse(formData['tankEndPressure'].toString())
-                : null,
-        tankKind:
-            formData['tankKind'] != null &&
-                    formData['tankKind'].toString().isNotEmpty
-                ? TankKind.values.firstWhere(
-                  (e) => e.name == formData['tankKind'],
-                  orElse: () => TankKind.STEEL,
-                )
-                : null,
-        suit:
-            formData['suit'] != null && formData['suit'].toString().isNotEmpty
-                ? Suit.values.firstWhere(
-                  (e) => e.name == formData['suit'],
-                  orElse: () => Suit.WET,
-                )
-                : null,
-        weight:
-            formData['weight'] != null &&
-                    formData['weight'].toString().isNotEmpty
-                ? double.parse(formData['weight'].toString())
-                : null,
-        weather:
-            formData['weather'] != null &&
-                    formData['weather'].toString().isNotEmpty
-                ? Weather.values.firstWhere(
-                  (e) => e.name == formData['weather'],
-                  orElse: () => Weather.SUNNY,
-                )
-                : null,
-        temperature:
-            formData['temperature'] != null &&
-                    formData['temperature'].toString().isNotEmpty
-                ? double.parse(formData['temperature'].toString())
-                : null,
-        waterTemperature:
-            formData['waterTemperature'] != null &&
-                    formData['waterTemperature'].toString().isNotEmpty
-                ? double.parse(formData['waterTemperature'].toString())
-                : null,
-        transparency:
-            formData['transparency'] != null &&
-                    formData['transparency'].toString().isNotEmpty
-                ? double.parse(formData['transparency'].toString())
-                : null,
-        memo: formData['memo'] as String?,
-      );
-
-      try {
-        if (diveLog == null) {
-          // 新規作成
-          await databaseService.insertDiveLog(newDiveLog);
-        } else {
-          // 更新
-          await databaseService.updateDiveLog(newDiveLog);
-        }
-        isLoading.value = false;
-      } catch (e) {
-        isLoading.value = false;
-        if (context.mounted) {
-          ScaffoldMessenger.of(
-            context,
-          ).showSnackBar(SnackBar(content: Text('エラーが発生しました: $e')));
-        }
-      }
-    }
-  }, [formKey, isLoading, diveLog, databaseService, dateFormat, context]);
 }

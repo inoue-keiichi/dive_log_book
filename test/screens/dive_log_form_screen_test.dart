@@ -1,5 +1,5 @@
+import 'package:dive_log_book/features/divelog/divelog_form.dart';
 import 'package:dive_log_book/models/dive_log.dart';
-import 'package:dive_log_book/screens/dive_log_form_screen.dart';
 import 'package:dive_log_book/services/database_service.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_form_builder/flutter_form_builder.dart';
@@ -292,7 +292,7 @@ void main() {
       // テスト用のダイブログデータ
       final diveLog = DiveLog(
         id: 1,
-        date: '2022-04-01',
+        date: DateTime.parse('2022-04-01'),
         place: 'Ose',
         point: 'Wannai',
         divingStartTime: '09:30',
@@ -554,11 +554,6 @@ void main() {
           final invalidValue = testCase['invalidValue'] as String;
           final errorMessage = testCase['errorMessage'] as String;
 
-          // テスト情報をログ出力
-          print(
-            'テスト実行: フィールド=$fieldName, 不正値=$invalidValue, 期待エラー=$errorMessage',
-          );
-
           // 無効な値を入力
           await tester.enterText(
             find.byWidgetPredicate(
@@ -575,11 +570,13 @@ void main() {
             find.byType(SingleChildScrollView),
             const Offset(0, -500),
           );
-          await tester.pumpAndSettle();
+          await tester.pumpAndSettle(const Duration(seconds: 1));
 
           // 送信ボタンをタップ
-          await tester.tap(find.text('追加'));
-          await tester.pumpAndSettle();
+          await tester.tap(find.widgetWithText(ElevatedButton, '追加'));
+          // await tester.tap(find.text('追加'));
+          // エラーメッセージが表示されるまで十分に待機
+          await tester.pumpAndSettle(const Duration(seconds: 1));
 
           // エラーメッセージが表示されるか確認
           expect(

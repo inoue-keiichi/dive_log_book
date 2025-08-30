@@ -1,5 +1,6 @@
 import 'dart:io';
 
+import 'package:intl/intl.dart';
 import 'package:path/path.dart';
 import 'package:path_provider/path_provider.dart';
 import 'package:sqflite_common_ffi/sqflite_ffi.dart';
@@ -74,7 +75,7 @@ class DatabaseService {
     final db = await database;
     return await db.insert(
       'dive_logs',
-      diveLog.toMap(),
+      buildDiveLogMap(diveLog),
       conflictAlgorithm: ConflictAlgorithm.replace,
     );
   }
@@ -84,7 +85,7 @@ class DatabaseService {
     final db = await database;
     return await db.update(
       'dive_logs',
-      diveLog.toMap(),
+      buildDiveLogMap(diveLog),
       where: 'id = ?',
       whereArgs: [diveLog.id],
     );
@@ -104,7 +105,7 @@ class DatabaseService {
       orderBy: 'date DESC',
     );
     return List.generate(maps.length, (i) {
-      return DiveLog.fromMap(maps[i]);
+      return buildDiveLog(maps[i]);
     });
   }
 
@@ -118,8 +119,73 @@ class DatabaseService {
     );
 
     if (maps.isNotEmpty) {
-      return DiveLog.fromMap(maps.first);
+      return buildDiveLog(maps.first);
     }
     return null;
   }
+}
+
+Map<String, dynamic> buildDiveLogMap(DiveLog diveLog) {
+  return {
+    'id': diveLog.id,
+    'date': DateFormat("yyyy-MM-dd").format(diveLog.date),
+    'place': diveLog.place,
+    'point': diveLog.point,
+    'divingStartTime': diveLog.divingStartTime,
+    'divingEndTime': diveLog.divingEndTime,
+    'averageDepth': diveLog.averageDepth,
+    'maxDepth': diveLog.maxDepth,
+    'tankStartPressure': diveLog.tankStartPressure,
+    'tankEndPressure': diveLog.tankEndPressure,
+    'tankKind': diveLog.tankKind?.name,
+    'suit': diveLog.suit?.name,
+    'weight': diveLog.weight,
+    'weather': diveLog.weather?.name,
+    'temperature': diveLog.temperature,
+    'waterTemperature': diveLog.waterTemperature,
+    'transparency': diveLog.transparency,
+    'memo': diveLog.memo,
+  };
+}
+
+// データベースから取得したMapからDiveLogオブジェクトを作成
+DiveLog buildDiveLog(Map<String, dynamic> map) {
+  return DiveLog(
+    id: map['id'],
+    date: DateTime.parse(map['date']),
+    place: map['place'],
+    point: map['point'],
+    divingStartTime: map['divingStartTime'],
+    divingEndTime: map['divingEndTime'],
+    averageDepth: map['averageDepth']?.toDouble(),
+    maxDepth: map['maxDepth']?.toDouble(),
+    tankStartPressure: map['tankStartPressure']?.toDouble(),
+    tankEndPressure: map['tankEndPressure']?.toDouble(),
+    tankKind:
+        map['tankKind'] != null
+            ? TankKind.values.firstWhere(
+              (e) => e.toString() == 'TankKind.${map['tankKind']}',
+              orElse: () => TankKind.STEEL,
+            )
+            : null,
+    suit:
+        map['suit'] != null
+            ? Suit.values.firstWhere(
+              (e) => e.toString() == 'Suit.${map['suit']}',
+              orElse: () => Suit.WET,
+            )
+            : null,
+    weight: map['weight']?.toDouble(),
+    weather:
+        map['weather'] != null
+            ? Weather.values.firstWhere(
+              (e) => e.toString() == 'Weather.${map['weather']}',
+              orElse: () => Weather.SUNNY,
+            )
+            : null,
+    temperature: map['temperature']?.toDouble(),
+    waterTemperature: map['waterTemperature']?.toDouble(),
+    transparency: map['transparency']?.toDouble(),
+    memo: map['memo'],
+  );
 }
