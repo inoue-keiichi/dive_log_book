@@ -35,14 +35,6 @@ class DivelogListScreen extends HookWidget {
             diveLogs,
             isLoading,
           ),
-      onDeletePressed:
-          (diveLog) => _handleDeletePressed(
-            context,
-            diveLog,
-            databaseService,
-            diveLogs,
-            isLoading,
-          ),
     );
   }
 
@@ -78,39 +70,6 @@ class DivelogListScreen extends HookWidget {
       ),
     );
     if (result == true) {
-      _loadDiveLogs(databaseService, diveLogs, isLoading);
-    }
-  }
-
-  Future<void> _handleDeletePressed(
-    BuildContext context,
-    DiveLog diveLog,
-    DatabaseService databaseService,
-    ValueNotifier<List<DiveLog>> diveLogs,
-    ValueNotifier<bool> isLoading,
-  ) async {
-    // 削除確認ダイアログ
-    final confirmed = await showDialog<bool>(
-      context: context,
-      builder:
-          (context) => AlertDialog(
-            title: const Text('削除の確認'),
-            content: const Text('このダイブログを削除しますか？'),
-            actions: [
-              TextButton(
-                onPressed: () => Navigator.pop(context, false),
-                child: const Text('キャンセル'),
-              ),
-              TextButton(
-                onPressed: () => Navigator.pop(context, true),
-                child: const Text('削除'),
-              ),
-            ],
-          ),
-    );
-
-    if (confirmed == true && diveLog.id != null) {
-      await databaseService.deleteDiveLog(diveLog.id!);
       _loadDiveLogs(databaseService, diveLogs, isLoading);
     }
   }

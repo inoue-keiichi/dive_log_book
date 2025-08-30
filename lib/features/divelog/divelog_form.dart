@@ -18,7 +18,6 @@ class DiveLogFormScreen extends HookWidget {
     final formKey = useMemoized(() => GlobalKey<FormBuilderState>());
     final isLoading = useLoading();
     final databaseService = useMemoized(() => DatabaseService());
-    final dateFormat = useDateFormat('yyyy-MM-dd');
 
     // フォーム送信ハンドラー（新規作成または更新）
     final handleSubmit =
@@ -27,7 +26,6 @@ class DiveLogFormScreen extends HookWidget {
               formKey: formKey,
               isLoading: isLoading,
               databaseService: databaseService,
-              dateFormat: dateFormat,
               context: context,
             )
             : useUpdateHandler(
@@ -35,12 +33,21 @@ class DiveLogFormScreen extends HookWidget {
               isLoading: isLoading,
               diveLog: diveLog!, // この時点ではdiveLog != nullなので安全
               databaseService: databaseService,
-              dateFormat: dateFormat,
               context: context,
             );
 
     final divelogInit =
         diveLog == null ? DiveLog(date: DateTime.now()) : diveLog!;
+
+    // 削除ハンドラー（編集時のみ）
+    final handleDelete =
+        diveLog != null
+            ? useDeleteHandler(
+              diveLog: diveLog!,
+              databaseService: databaseService,
+              context: context,
+            )
+            : null;
 
     // UIテンプレートを呼び出し
     return DiveLogFormTemplate(
@@ -48,6 +55,7 @@ class DiveLogFormScreen extends HookWidget {
       isLoading: isLoading,
       divelog: divelogInit,
       handleSubmit: handleSubmit,
+      handleDelete: handleDelete,
     );
   }
 }

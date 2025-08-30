@@ -1,15 +1,16 @@
+import 'package:dive_log_book/features/divelog/form_hooks.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_form_builder/flutter_form_builder.dart';
-import 'package:intl/intl.dart';
 
 import '../../models/dive_log.dart';
-import 'form_hooks.dart';
+import '../../utils/date_formatter.dart';
 
 class DiveLogFormTemplate extends StatelessWidget {
   final GlobalKey<FormBuilderState> formKey;
   final ValueNotifier<bool> isLoading;
   final DiveLog divelog;
   final VoidCallback handleSubmit;
+  final VoidCallback? handleDelete;
 
   const DiveLogFormTemplate({
     super.key,
@@ -17,12 +18,13 @@ class DiveLogFormTemplate extends StatelessWidget {
     required this.isLoading,
     required this.divelog,
     required this.handleSubmit,
+    this.handleDelete,
   });
 
   @override
   Widget build(BuildContext context) {
     // DiveLogをフォーム用の初期値に変換
-    final formInitialValues = divelog.toMap();
+    final formInitialValues = toMap(divelog);
 
     return Scaffold(
       appBar: AppBar(
@@ -31,6 +33,11 @@ class DiveLogFormTemplate extends StatelessWidget {
           icon: const Icon(Icons.arrow_back),
           onPressed: () => Navigator.pop(context),
         ),
+        actions: [
+          // 編集時のみ削除ボタンを表示
+          if (divelog.id != null && handleDelete != null)
+            IconButton(icon: const Icon(Icons.delete), onPressed: handleDelete),
+        ],
       ),
       body: ValueListenableBuilder<bool>(
         valueListenable: isLoading,
@@ -48,7 +55,7 @@ class DiveLogFormTemplate extends StatelessWidget {
                       FormBuilderDateTimePicker(
                         name: 'date',
                         inputType: InputType.date,
-                        format: DateFormat('yyyy-MM-dd'),
+                        format: DateFormatter.dateFormat,
                         decoration: const InputDecoration(
                           labelText: '日付',
                           border: OutlineInputBorder(),
@@ -65,6 +72,7 @@ class DiveLogFormTemplate extends StatelessWidget {
                           border: OutlineInputBorder(),
                         ),
                         maxLength: 63,
+                        validator: DiveLogValidators.validatePlace,
                       ),
                       const SizedBox(height: 16),
 
@@ -76,6 +84,7 @@ class DiveLogFormTemplate extends StatelessWidget {
                           border: OutlineInputBorder(),
                         ),
                         maxLength: 63,
+                        validator: DiveLogValidators.validatePoint,
                       ),
                       const SizedBox(height: 16),
 
@@ -86,7 +95,7 @@ class DiveLogFormTemplate extends StatelessWidget {
                           labelText: '潜水開始時間 (HH:mm)',
                           border: OutlineInputBorder(),
                         ),
-                        validator: useTimeFormatValidator,
+                        validator: DiveLogValidators.validateTimeFormat,
                       ),
                       const SizedBox(height: 16),
 
@@ -97,7 +106,7 @@ class DiveLogFormTemplate extends StatelessWidget {
                           labelText: '潜水終了時間 (HH:mm)',
                           border: OutlineInputBorder(),
                         ),
-                        validator: useTimeFormatValidator,
+                        validator: DiveLogValidators.validateTimeFormat,
                       ),
                       const SizedBox(height: 16),
 
@@ -109,9 +118,7 @@ class DiveLogFormTemplate extends StatelessWidget {
                           border: OutlineInputBorder(),
                         ),
                         keyboardType: TextInputType.number,
-                        validator:
-                            (value) =>
-                                useNumericValidator(value, min: 0, max: 100),
+                        validator: DiveLogValidators.validateAverageDepth,
                       ),
                       const SizedBox(height: 16),
 
@@ -123,9 +130,7 @@ class DiveLogFormTemplate extends StatelessWidget {
                           border: OutlineInputBorder(),
                         ),
                         keyboardType: TextInputType.number,
-                        validator:
-                            (value) =>
-                                useNumericValidator(value, min: 0, max: 100),
+                        validator: DiveLogValidators.validateMaxDepth,
                       ),
                       const SizedBox(height: 16),
 
@@ -137,9 +142,7 @@ class DiveLogFormTemplate extends StatelessWidget {
                           border: OutlineInputBorder(),
                         ),
                         keyboardType: TextInputType.number,
-                        validator:
-                            (value) =>
-                                useNumericValidator(value, min: 0, max: 500),
+                        validator: DiveLogValidators.validateTankStartPressure,
                       ),
                       const SizedBox(height: 16),
 
@@ -151,9 +154,7 @@ class DiveLogFormTemplate extends StatelessWidget {
                           border: OutlineInputBorder(),
                         ),
                         keyboardType: TextInputType.number,
-                        validator:
-                            (value) =>
-                                useNumericValidator(value, min: 0, max: 500),
+                        validator: DiveLogValidators.validateTankEndPressure,
                       ),
                       const SizedBox(height: 16),
 
@@ -185,9 +186,7 @@ class DiveLogFormTemplate extends StatelessWidget {
                           border: OutlineInputBorder(),
                         ),
                         keyboardType: TextInputType.number,
-                        validator:
-                            (value) =>
-                                useNumericValidator(value, min: 0, max: 50),
+                        validator: DiveLogValidators.validateWeight,
                       ),
                       const SizedBox(height: 16),
 
@@ -251,9 +250,7 @@ class DiveLogFormTemplate extends StatelessWidget {
                           border: OutlineInputBorder(),
                         ),
                         keyboardType: TextInputType.number,
-                        validator:
-                            (value) =>
-                                useNumericValidator(value, min: -100, max: 100),
+                        validator: DiveLogValidators.validateTemperature,
                       ),
                       const SizedBox(height: 16),
 
@@ -265,9 +262,7 @@ class DiveLogFormTemplate extends StatelessWidget {
                           border: OutlineInputBorder(),
                         ),
                         keyboardType: TextInputType.number,
-                        validator:
-                            (value) =>
-                                useNumericValidator(value, min: -10, max: 50),
+                        validator: DiveLogValidators.validateWaterTemperature,
                       ),
                       const SizedBox(height: 16),
 
@@ -279,14 +274,7 @@ class DiveLogFormTemplate extends StatelessWidget {
                           border: OutlineInputBorder(),
                         ),
                         keyboardType: TextInputType.number,
-                        validator:
-                            (value) => useNumericValidator(
-                              value,
-                              min: 0,
-                              max: 50,
-                              minErrorMessage: '0以上の数値を入力してください',
-                              maxErrorMessage: '50以下の数値を入力してください',
-                            ),
+                        validator: DiveLogValidators.validateTransparency,
                       ),
                       const SizedBox(height: 16),
 
@@ -299,6 +287,7 @@ class DiveLogFormTemplate extends StatelessWidget {
                         ),
                         maxLines: 5,
                         maxLength: 511,
+                        validator: DiveLogValidators.validateMemo,
                       ),
                       const SizedBox(height: 24),
 

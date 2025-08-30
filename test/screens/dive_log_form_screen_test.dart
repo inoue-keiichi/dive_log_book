@@ -4,7 +4,6 @@ import 'package:dive_log_book/services/database_service.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_form_builder/flutter_form_builder.dart';
 import 'package:flutter_test/flutter_test.dart';
-import 'package:intl/intl.dart';
 import 'package:sqflite/sqflite.dart';
 import 'package:sqflite_common_ffi/sqflite_ffi.dart';
 
@@ -48,11 +47,6 @@ void main() {
     mockNavigatorObserver = MockNavigatorObserver();
     mockNavigatorObserver.reset();
   });
-
-  // 固定の日付を使用するためのセットアップ
-  final mockDate = DateTime(2023, 6, 27);
-  final dateFormat = DateFormat('yyyy-MM-dd');
-  final formattedMockDate = dateFormat.format(mockDate);
 
   // フォームフィールドを入力するヘルパー関数
   Future<void> fillFormFields(WidgetTester tester) async {

@@ -1,7 +1,6 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_form_builder/flutter_form_builder.dart';
 import 'package:flutter_hooks/flutter_hooks.dart';
-import 'package:intl/intl.dart';
 
 import '../../models/dive_log.dart';
 import '../../services/database_service.dart';
@@ -9,7 +8,6 @@ import '../../services/database_service.dart';
 /// フォームデータからDiveLogオブジェクトを作成するロジック
 DiveLog _createDiveLogFromFormData({
   required Map<String, dynamic> formData,
-  required DateFormat dateFormat,
   int? existingId,
 }) {
   return DiveLog(
@@ -84,43 +82,27 @@ DiveLog _createDiveLogFromFormData({
   );
 }
 
-// 数値バリデーション用のカスタムフック
-String? useNumericValidator(
-  String? value, {
-  double? min,
-  double? max,
-  String? minErrorMessage,
-  String? maxErrorMessage,
-}) {
-  if (value == null || value.isEmpty) {
-    return null; // 未入力はOK
-  }
-  if (double.tryParse(value) == null) {
-    return '数値を入力してください';
-  }
-
-  final numValue = double.parse(value);
-
-  if (max != null && numValue > max) {
-    return maxErrorMessage ?? '$max以下の数値を入力してください';
-  }
-
-  if (min != null && numValue < min) {
-    return minErrorMessage ?? '$min以上の数値を入力してください';
-  }
-
-  return null;
-}
-
-// 時間フォーマットバリデーション用のカスタムフック
-String? useTimeFormatValidator(String? value) {
-  if (value == null || value.isEmpty) {
-    return null; // 未入力はOK
-  }
-  if (!RegExp(r'^([0-1]?[0-9]|2[0-3]):[0-5][0-9]$').hasMatch(value)) {
-    return '時間のフォーマットを HH:mm にしてください';
-  }
-  return null;
+Map<String, dynamic> toMap(DiveLog diveLog) {
+  return {
+    'id': diveLog.id,
+    'date': diveLog.date,
+    'place': diveLog.place,
+    'point': diveLog.point,
+    'divingStartTime': diveLog.divingStartTime,
+    'divingEndTime': diveLog.divingEndTime,
+    'averageDepth': diveLog.averageDepth?.toString(),
+    'maxDepth': diveLog.maxDepth?.toString(),
+    'tankStartPressure': diveLog.tankStartPressure?.toString(),
+    'tankEndPressure': diveLog.tankEndPressure?.toString(),
+    'tankKind': diveLog.tankKind?.name,
+    'suit': diveLog.suit?.name,
+    'weight': diveLog.weight?.toString(),
+    'weather': diveLog.weather?.name,
+    'temperature': diveLog.temperature?.toString(),
+    'waterTemperature': diveLog.waterTemperature?.toString(),
+    'transparency': diveLog.transparency?.toString(),
+    'memo': diveLog.memo,
+  };
 }
 
 // ローディング状態を管理するカスタムフック
@@ -128,17 +110,11 @@ ValueNotifier<bool> useLoading() {
   return useState<bool>(false);
 }
 
-// 日付フォーマッターを提供するカスタムフック
-DateFormat useDateFormat(String format) {
-  return useMemoized(() => DateFormat(format), [format]);
-}
-
 // ダイブログ作成処理のロジック
 VoidCallback useCreateHandler({
   required GlobalKey<FormBuilderState> formKey,
   required ValueNotifier<bool> isLoading,
   required DatabaseService databaseService,
-  required DateFormat dateFormat,
   required BuildContext context,
 }) {
   return useCallback(() async {
@@ -147,7 +123,6 @@ VoidCallback useCreateHandler({
 
     final newDiveLog = _createDiveLogFromFormData(
       formData: formData,
-      dateFormat: dateFormat,
       existingId: null, // 新規作成時はIDなし
     );
 
@@ -156,7 +131,7 @@ VoidCallback useCreateHandler({
     } finally {
       isLoading.value = false;
     }
-  }, [formKey, isLoading, databaseService, dateFormat, context]);
+  }, [formKey, isLoading, databaseService, context]);
 }
 
 // ダイブログ更新処理のロジック
@@ -165,7 +140,6 @@ VoidCallback useUpdateHandler({
   required ValueNotifier<bool> isLoading,
   required DiveLog diveLog,
   required DatabaseService databaseService,
-  required DateFormat dateFormat,
   required BuildContext context,
 }) {
   return useCallback(() async {
@@ -174,7 +148,6 @@ VoidCallback useUpdateHandler({
 
     final updatedDiveLog = _createDiveLogFromFormData(
       formData: formData,
-      dateFormat: dateFormat,
       existingId: diveLog.id, // 既存のIDを使用
     );
 
@@ -183,5 +156,51 @@ VoidCallback useUpdateHandler({
     } finally {
       isLoading.value = false;
     }
-  }, [formKey, isLoading, diveLog, databaseService, dateFormat, context]);
+  }, [formKey, isLoading, diveLog, databaseService, context]);
+}
+
+// ダイブログ削除処理のロジック
+VoidCallback useDeleteHandler({
+  required DiveLog diveLog,
+  required DatabaseService databaseService,
+  required BuildContext context,
+}) {
+  return useCallback(() async {
+    // 削除確認ダイアログ
+    final confirmed = await showDialog<bool>(
+      context: context,
+      builder:
+          (context) => AlertDialog(
+            title: const Text('削除の確認'),
+            content: const Text('このダイブログを削除しますか？'),
+            actions: [
+              TextButton(
+                onPressed: () => Navigator.pop(context, false),
+                child: const Text('キャンセル'),
+              ),
+              TextButton(
+                onPressed: () => Navigator.pop(context, true),
+                child: const Text('削除'),
+              ),
+            ],
+          ),
+    );
+
+    if (confirmed == true && diveLog.id != null) {
+      try {
+        await databaseService.deleteDiveLog(diveLog.id!);
+        // 削除成功時はリストに戻る
+        if (context.mounted) {
+          Navigator.pop(context, true);
+        }
+      } catch (e) {
+        // エラーハンドリング
+        if (context.mounted) {
+          ScaffoldMessenger.of(
+            context,
+          ).showSnackBar(const SnackBar(content: Text('削除に失敗しました')));
+        }
+      }
+    }
+  }, [diveLog, databaseService, context]);
 }

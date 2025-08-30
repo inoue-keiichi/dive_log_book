@@ -1,11 +1,11 @@
 import 'dart:io';
 
-import 'package:intl/intl.dart';
 import 'package:path/path.dart';
 import 'package:path_provider/path_provider.dart';
 import 'package:sqflite_common_ffi/sqflite_ffi.dart';
 
 import '../models/dive_log.dart';
+import '../utils/date_formatter.dart';
 
 class DatabaseService {
   static final DatabaseService _instance = DatabaseService._internal();
@@ -128,7 +128,7 @@ class DatabaseService {
 Map<String, dynamic> buildDiveLogMap(DiveLog diveLog) {
   return {
     'id': diveLog.id,
-    'date': DateFormat("yyyy-MM-dd").format(diveLog.date),
+    'date': DateFormatter.formatDate(diveLog.date),
     'place': diveLog.place,
     'point': diveLog.point,
     'divingStartTime': diveLog.divingStartTime,

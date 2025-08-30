@@ -1,7 +1,7 @@
 import 'package:flutter/material.dart';
-import 'package:intl/intl.dart';
 
 import '../../models/dive_log.dart';
+import '../../utils/date_formatter.dart';
 
 /// ダイブログリスト画面のUIテンプレート
 class DiveLogListTemplate extends StatelessWidget {
@@ -9,7 +9,6 @@ class DiveLogListTemplate extends StatelessWidget {
   final bool isLoading;
   final VoidCallback? onAddPressed;
   final void Function(DiveLog diveLog)? onItemTap;
-  final void Function(DiveLog diveLog)? onDeletePressed;
 
   const DiveLogListTemplate({
     super.key,
@@ -17,7 +16,6 @@ class DiveLogListTemplate extends StatelessWidget {
     required this.isLoading,
     this.onAddPressed,
     this.onItemTap,
-    this.onDeletePressed,
   });
 
   @override
@@ -55,12 +53,8 @@ class DiveLogListTemplate extends StatelessWidget {
       margin: const EdgeInsets.symmetric(horizontal: 16.0, vertical: 8.0),
       child: ListTile(
         title: Text(diveLog.point ?? ''),
-        subtitle: Text(DateFormat("yyyy-MM-dd").format(diveLog.date)),
+        subtitle: Text(DateFormatter.formatDate(diveLog.date)),
         onTap: () => onItemTap?.call(diveLog),
-        trailing: IconButton(
-          icon: const Icon(Icons.delete),
-          onPressed: () => onDeletePressed?.call(diveLog),
-        ),
       ),
     );
   }
