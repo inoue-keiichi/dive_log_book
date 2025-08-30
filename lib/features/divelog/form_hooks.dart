@@ -153,19 +153,8 @@ VoidCallback useCreateHandler({
 
     try {
       await databaseService.insertDiveLog(newDiveLog);
+    } finally {
       isLoading.value = false;
-      if (context.mounted) {
-        ScaffoldMessenger.of(
-          context,
-        ).showSnackBar(const SnackBar(content: Text('ダイブログを作成しました')));
-      }
-    } catch (e) {
-      isLoading.value = false;
-      if (context.mounted) {
-        ScaffoldMessenger.of(
-          context,
-        ).showSnackBar(SnackBar(content: Text('作成エラーが発生しました: $e')));
-      }
     }
   }, [formKey, isLoading, databaseService, dateFormat, context]);
 }
@@ -191,19 +180,8 @@ VoidCallback useUpdateHandler({
 
     try {
       await databaseService.updateDiveLog(updatedDiveLog);
+    } finally {
       isLoading.value = false;
-      if (context.mounted) {
-        ScaffoldMessenger.of(
-          context,
-        ).showSnackBar(const SnackBar(content: Text('ダイブログを更新しました')));
-      }
-    } catch (e) {
-      isLoading.value = false;
-      if (context.mounted) {
-        ScaffoldMessenger.of(
-          context,
-        ).showSnackBar(SnackBar(content: Text('更新エラーが発生しました: $e')));
-      }
     }
   }, [formKey, isLoading, diveLog, databaseService, dateFormat, context]);
 }

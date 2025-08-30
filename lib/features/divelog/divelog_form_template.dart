@@ -313,7 +313,7 @@ class DiveLogFormTemplate extends StatelessWidget {
                               Navigator.pop(context, true);
                             }
                           },
-                          child: const Text('上書き'),
+                          child: Text(divelog.id == null ? '新規作成' : '上書き'),
                         ),
                       ),
                     ],
