@@ -241,7 +241,7 @@ void main() {
       await tester.pumpWidget(
         MaterialApp(
           // navigatorObservers: [mockNavigatorObserver],
-          home: DiveLogFormScreen(),
+          home: DiveLogForm(),
         ),
       );
 
@@ -309,7 +309,7 @@ void main() {
       await tester.pumpWidget(
         MaterialApp(
           // navigatorObservers: [mockNavigatorObserver],
-          home: DiveLogFormScreen(diveLog: diveLog),
+          home: DiveLogForm(diveLog: diveLog),
         ),
       );
 
@@ -542,7 +542,7 @@ void main() {
       // 各テストケースを実行
       for (final testCase in testCases) {
         testWidgets(testCase['name'] as String, (WidgetTester tester) async {
-          await tester.pumpWidget(MaterialApp(home: DiveLogFormScreen()));
+          await tester.pumpWidget(MaterialApp(home: DiveLogForm()));
 
           final fieldName = testCase['fieldName'] as String;
           final invalidValue = testCase['invalidValue'] as String;
@@ -675,7 +675,7 @@ void main() {
         await tester.pumpWidget(
           MaterialApp(
             // navigatorObservers: [mockNavigatorObserver],
-            home: DiveLogFormScreen(),
+            home: DiveLogForm(),
           ),
           duration: Duration(milliseconds: 3000),
         );
@@ -828,7 +828,7 @@ void main() {
       await tester.pumpWidget(
         MaterialApp(
           // navigatorObservers: [mockNavigatorObserver],
-          home: DiveLogFormScreen(),
+          home: DiveLogForm(),
         ),
       );
 

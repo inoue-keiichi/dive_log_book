@@ -1,6 +1,6 @@
 import 'package:flutter/material.dart';
 
-import 'features/divelog_list/divelog_list_screen.dart';
+import 'features/divelog_list/divelog_list.dart';
 import 'services/database_service.dart';
 
 void main() async {
@@ -29,7 +29,7 @@ class MyApp extends StatelessWidget {
         ),
         useMaterial3: true,
       ),
-      home: const DivelogListScreen(),
+      home: const DivelogList(),
     );
   }
 }

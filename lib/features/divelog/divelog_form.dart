@@ -5,10 +5,10 @@ import '../../models/dive_log.dart';
 import 'divelog_form_template.dart';
 import 'use_divelog_form.dart';
 
-class DiveLogFormScreen extends HookWidget {
+class DiveLogForm extends HookWidget {
   final DiveLog? diveLog;
 
-  const DiveLogFormScreen({super.key, this.diveLog});
+  const DiveLogForm({super.key, this.diveLog});
 
   @override
   Widget build(BuildContext context) {
