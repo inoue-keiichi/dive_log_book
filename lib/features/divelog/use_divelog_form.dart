@@ -5,6 +5,9 @@ import 'package:flutter_hooks/flutter_hooks.dart';
 import '../../models/dive_log.dart';
 import '../../services/database_service.dart';
 
+// ファイルレベルでDatabaseServiceのインスタンスを取得
+final _databaseService = DatabaseService();
+
 /// フォームデータからDiveLogオブジェクトを作成するロジック
 DiveLog _createDiveLogFromFormData({
   required Map<String, dynamic> formData,
@@ -82,7 +85,11 @@ DiveLog _createDiveLogFromFormData({
   );
 }
 
-Map<String, dynamic> toMap(DiveLog diveLog) {
+Map<String, dynamic> _toMap(DiveLog? diveLog) {
+  if (diveLog == null) {
+    return {};
+  }
+
   return {
     'id': diveLog.id,
     'date': diveLog.date,
@@ -105,17 +112,48 @@ Map<String, dynamic> toMap(DiveLog diveLog) {
   };
 }
 
-// ローディング状態を管理するカスタムフック
-ValueNotifier<bool> useLoading() {
-  return useState<bool>(false);
+// フォーム関連のフックをまとめて返すカスタムフック
+({
+  GlobalKey<FormBuilderState> formKey,
+  Map<String, dynamic> initilalValue,
+  ValueNotifier<bool> isLoading,
+  VoidCallback submitHandler,
+  VoidCallback deleteHandler,
+})
+useDivelogForm({required BuildContext context, DiveLog? divelog}) {
+  final formKey = useMemoized(() => GlobalKey<FormBuilderState>());
+  final isLoading = useState<bool>(false);
+
+  final diveLogId = divelog?.id;
+  final submitHandler =
+      diveLogId == null
+          ? _useCreateHandler(formKey: formKey, isLoading: isLoading)
+          : _useUpdateHandler(
+            formKey: formKey,
+            isLoading: isLoading,
+            diveLogId: diveLogId,
+          );
+
+  final deleteHandler = _useDeleteHandler(
+    diveLogId: diveLogId,
+    context: context,
+  );
+
+  final divelogInit = divelog ?? DiveLog(date: DateTime.now());
+
+  return (
+    formKey: formKey,
+    initilalValue: _toMap(divelogInit),
+    isLoading: isLoading,
+    submitHandler: submitHandler,
+    deleteHandler: deleteHandler,
+  );
 }
 
 // ダイブログ作成処理のロジック
-VoidCallback useCreateHandler({
+VoidCallback _useCreateHandler({
   required GlobalKey<FormBuilderState> formKey,
   required ValueNotifier<bool> isLoading,
-  required DatabaseService databaseService,
-  required BuildContext context,
 }) {
   return useCallback(() async {
     final formData = formKey.currentState!.value;
@@ -127,20 +165,18 @@ VoidCallback useCreateHandler({
     );
 
     try {
-      await databaseService.insertDiveLog(newDiveLog);
+      await _databaseService.insertDiveLog(newDiveLog);
     } finally {
       isLoading.value = false;
     }
-  }, [formKey, isLoading, databaseService, context]);
+  }, [formKey, isLoading]);
 }
 
 // ダイブログ更新処理のロジック
-VoidCallback useUpdateHandler({
+VoidCallback _useUpdateHandler({
   required GlobalKey<FormBuilderState> formKey,
   required ValueNotifier<bool> isLoading,
-  required DiveLog diveLog,
-  required DatabaseService databaseService,
-  required BuildContext context,
+  required int diveLogId,
 }) {
   return useCallback(() async {
     final formData = formKey.currentState!.value;
@@ -148,21 +184,20 @@ VoidCallback useUpdateHandler({
 
     final updatedDiveLog = _createDiveLogFromFormData(
       formData: formData,
-      existingId: diveLog.id, // 既存のIDを使用
+      existingId: diveLogId, // 既存のIDを使用
     );
 
     try {
-      await databaseService.updateDiveLog(updatedDiveLog);
+      await _databaseService.updateDiveLog(updatedDiveLog);
     } finally {
       isLoading.value = false;
     }
-  }, [formKey, isLoading, diveLog, databaseService, context]);
+  }, [formKey, isLoading, diveLogId]);
 }
 
 // ダイブログ削除処理のロジック
-VoidCallback useDeleteHandler({
-  required DiveLog diveLog,
-  required DatabaseService databaseService,
+VoidCallback _useDeleteHandler({
+  required int? diveLogId,
   required BuildContext context,
 }) {
   return useCallback(() async {
@@ -186,9 +221,9 @@ VoidCallback useDeleteHandler({
           ),
     );
 
-    if (confirmed == true && diveLog.id != null) {
+    if (confirmed == true && diveLogId != null) {
       try {
-        await databaseService.deleteDiveLog(diveLog.id!);
+        await _databaseService.deleteDiveLog(diveLogId);
         // 削除成功時はリストに戻る
         if (context.mounted) {
           Navigator.pop(context, true);
@@ -202,5 +237,5 @@ VoidCallback useDeleteHandler({
         }
       }
     }
-  }, [diveLog, databaseService, context]);
+  }, [context]);
 }

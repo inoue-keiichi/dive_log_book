@@ -1,4 +1,3 @@
-import 'package:dive_log_book/features/divelog/form_hooks.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_form_builder/flutter_form_builder.dart';
 
@@ -7,35 +6,34 @@ import '../../utils/date_formatter.dart';
 
 class DiveLogFormTemplate extends StatelessWidget {
   final GlobalKey<FormBuilderState> formKey;
+  final Map<String, dynamic> initilalValue;
+  final bool edit;
   final ValueNotifier<bool> isLoading;
-  final DiveLog divelog;
   final VoidCallback handleSubmit;
   final VoidCallback? handleDelete;
 
   const DiveLogFormTemplate({
     super.key,
     required this.formKey,
+    required this.initilalValue,
+    required this.edit,
     required this.isLoading,
-    required this.divelog,
     required this.handleSubmit,
     this.handleDelete,
   });
 
   @override
   Widget build(BuildContext context) {
-    // DiveLogをフォーム用の初期値に変換
-    final formInitialValues = toMap(divelog);
-
     return Scaffold(
       appBar: AppBar(
-        title: Text(divelog.id == null ? '新規ダイブログ' : 'ダイブログ編集'),
+        title: Text(edit ? 'ダイブログ編集' : '新規ダイブログ'),
         leading: IconButton(
           icon: const Icon(Icons.arrow_back),
           onPressed: () => Navigator.pop(context),
         ),
         actions: [
           // 編集時のみ削除ボタンを表示
-          if (divelog.id != null && handleDelete != null)
+          if (!edit && handleDelete != null)
             IconButton(icon: const Icon(Icons.delete), onPressed: handleDelete),
         ],
       ),
@@ -48,7 +46,7 @@ class DiveLogFormTemplate extends StatelessWidget {
                 padding: const EdgeInsets.all(16.0),
                 child: FormBuilder(
                   key: formKey,
-                  initialValue: formInitialValues,
+                  initialValue: initilalValue,
                   child: Column(
                     children: [
                       // 日付
@@ -302,7 +300,7 @@ class DiveLogFormTemplate extends StatelessWidget {
                               Navigator.pop(context, true);
                             }
                           },
-                          child: Text(divelog.id == null ? '新規作成' : '上書き'),
+                          child: Text(edit ? '上書き' : '新規作成'),
                         ),
                       ),
                     ],
