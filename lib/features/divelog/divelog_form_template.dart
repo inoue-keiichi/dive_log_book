@@ -1,8 +1,8 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_form_builder/flutter_form_builder.dart';
 
-import '../../models/dive_log.dart';
 import '../../utils/date_formatter.dart';
+import '../../validators/validator.dart';
 
 class DiveLogFormTemplate extends StatelessWidget {
   final GlobalKey<FormBuilderState> formKey;
@@ -70,7 +70,6 @@ class DiveLogFormTemplate extends StatelessWidget {
                           border: OutlineInputBorder(),
                         ),
                         maxLength: 63,
-                        validator: DiveLogValidators.validatePlace,
                       ),
                       const SizedBox(height: 16),
 
@@ -82,7 +81,6 @@ class DiveLogFormTemplate extends StatelessWidget {
                           border: OutlineInputBorder(),
                         ),
                         maxLength: 63,
-                        validator: DiveLogValidators.validatePoint,
                       ),
                       const SizedBox(height: 16),
 
@@ -93,7 +91,7 @@ class DiveLogFormTemplate extends StatelessWidget {
                           labelText: '潜水開始時間 (HH:mm)',
                           border: OutlineInputBorder(),
                         ),
-                        validator: DiveLogValidators.validateTimeFormat,
+                        validator: validateTimeFormat,
                       ),
                       const SizedBox(height: 16),
 
@@ -104,7 +102,7 @@ class DiveLogFormTemplate extends StatelessWidget {
                           labelText: '潜水終了時間 (HH:mm)',
                           border: OutlineInputBorder(),
                         ),
-                        validator: DiveLogValidators.validateTimeFormat,
+                        validator: validateTimeFormat,
                       ),
                       const SizedBox(height: 16),
 
@@ -116,7 +114,7 @@ class DiveLogFormTemplate extends StatelessWidget {
                           border: OutlineInputBorder(),
                         ),
                         keyboardType: TextInputType.number,
-                        validator: DiveLogValidators.validateAverageDepth,
+                        validator: validateAverageDepth,
                       ),
                       const SizedBox(height: 16),
 
@@ -128,7 +126,7 @@ class DiveLogFormTemplate extends StatelessWidget {
                           border: OutlineInputBorder(),
                         ),
                         keyboardType: TextInputType.number,
-                        validator: DiveLogValidators.validateMaxDepth,
+                        validator: validateMaxDepth,
                       ),
                       const SizedBox(height: 16),
 
@@ -140,7 +138,7 @@ class DiveLogFormTemplate extends StatelessWidget {
                           border: OutlineInputBorder(),
                         ),
                         keyboardType: TextInputType.number,
-                        validator: DiveLogValidators.validateTankStartPressure,
+                        validator: validateTankStartPressure,
                       ),
                       const SizedBox(height: 16),
 
@@ -152,7 +150,7 @@ class DiveLogFormTemplate extends StatelessWidget {
                           border: OutlineInputBorder(),
                         ),
                         keyboardType: TextInputType.number,
-                        validator: DiveLogValidators.validateTankEndPressure,
+                        validator: validateTankEndPressure,
                       ),
                       const SizedBox(height: 16),
 
@@ -184,7 +182,7 @@ class DiveLogFormTemplate extends StatelessWidget {
                           border: OutlineInputBorder(),
                         ),
                         keyboardType: TextInputType.number,
-                        validator: DiveLogValidators.validateWeight,
+                        validator: validateWeight,
                       ),
                       const SizedBox(height: 16),
 
@@ -248,7 +246,7 @@ class DiveLogFormTemplate extends StatelessWidget {
                           border: OutlineInputBorder(),
                         ),
                         keyboardType: TextInputType.number,
-                        validator: DiveLogValidators.validateTemperature,
+                        validator: validateTemperature,
                       ),
                       const SizedBox(height: 16),
 
@@ -260,7 +258,7 @@ class DiveLogFormTemplate extends StatelessWidget {
                           border: OutlineInputBorder(),
                         ),
                         keyboardType: TextInputType.number,
-                        validator: DiveLogValidators.validateWaterTemperature,
+                        validator: validateWaterTemperature,
                       ),
                       const SizedBox(height: 16),
 
@@ -272,7 +270,7 @@ class DiveLogFormTemplate extends StatelessWidget {
                           border: OutlineInputBorder(),
                         ),
                         keyboardType: TextInputType.number,
-                        validator: DiveLogValidators.validateTransparency,
+                        validator: validateTransparency,
                       ),
                       const SizedBox(height: 16),
 
@@ -284,8 +282,7 @@ class DiveLogFormTemplate extends StatelessWidget {
                           border: OutlineInputBorder(),
                         ),
                         maxLines: 5,
-                        maxLength: 511,
-                        validator: DiveLogValidators.validateMemo,
+                        maxLength: 1023,
                       ),
                       const SizedBox(height: 24),
 
@@ -311,4 +308,55 @@ class DiveLogFormTemplate extends StatelessWidget {
       ),
     );
   }
+}
+
+// 時間フォーマットバリデーション用の関数
+String? validateTimeFormat(String? value) {
+  if (value == null || value.isEmpty) {
+    return null; // 未入力はOK
+  }
+  if (!RegExp(r'^([0-1]?[0-9]|2[0-3]):[0-5][0-9]$').hasMatch(value)) {
+    return '時間のフォーマットを HH:mm にしてください';
+  }
+  return null;
+}
+
+// 水深バリデーション（平均水深用）
+String? validateAverageDepth(String? value) {
+  return validateDouble(value, min: 0, max: 100, unit: 'm');
+}
+
+// 水深バリデーション（最大水深用）
+String? validateMaxDepth(String? value) {
+  return validateDouble(value, min: 0, max: 200, unit: 'm');
+}
+
+// タンク圧力バリデーション（開始圧力用）
+String? validateTankStartPressure(String? value) {
+  return validateDouble(value, min: 0, max: 300, unit: 'kg/cm²');
+}
+
+// タンク圧力バリデーション（終了圧力用）
+String? validateTankEndPressure(String? value) {
+  return validateDouble(value, min: 0, max: 300, unit: 'kg/cm²');
+}
+
+// 重量バリデーション
+String? validateWeight(String? value) {
+  return validateDouble(value, min: 0, max: 50, unit: 'kg');
+}
+
+// 温度バリデーション（気温用）
+String? validateTemperature(String? value) {
+  return validateDouble(value, min: -50, max: 60, unit: '℃');
+}
+
+// 温度バリデーション（水温用）
+String? validateWaterTemperature(String? value) {
+  return validateDouble(value, min: -5, max: 50, unit: '℃');
+}
+
+// 透明度バリデーション
+String? validateTransparency(String? value) {
+  return validateDouble(value, min: 0, max: 100, unit: 'm');
 }
