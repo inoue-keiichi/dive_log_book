@@ -2,11 +2,11 @@ import 'package:flutter/material.dart';
 import 'package:flutter_hooks/flutter_hooks.dart';
 
 import '../../models/dive_log.dart';
-import '../../services/database_service.dart';
+import '../../repositories/divelog.dart';
 import '../divelog/divelog_form.dart';
 
-// ファイルレベルでDatabaseServiceのインスタンスを取得
-final _databaseService = DatabaseService();
+// ファイルレベルでDiveLogRepositoryのインスタンスを取得
+final _diveLogRepository = DiveLogRepository();
 
 /// ダイブログリスト画面用のカスタムフック
 ({
@@ -47,7 +47,7 @@ Future<void> _loadDiveLogs(
   ValueNotifier<bool> isLoading,
 ) async {
   isLoading.value = true;
-  diveLogs.value = await _databaseService.getDiveLogs();
+  diveLogs.value = await _diveLogRepository.getDiveLogs();
   isLoading.value = false;
 }
 
