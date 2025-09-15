@@ -129,4 +129,50 @@ class DiveLogRepository {
       memo: map['memo'],
     );
   }
+
+  // 統計機能拡張メソッド
+  Future<int> getTotalDivingTimeMinutes() async {
+    final db = await _databaseService.database;
+
+    final result = await db.rawQuery('''
+      SELECT SUM(
+        (CAST(substr(divingEndTime, 1, 2) AS INTEGER) * 60 +
+         CAST(substr(divingEndTime, 4, 2) AS INTEGER)) -
+        (CAST(substr(divingStartTime, 1, 2) AS INTEGER) * 60 +
+         CAST(substr(divingStartTime, 4, 2) AS INTEGER))
+      ) as total_minutes
+      FROM dive_logs
+      WHERE divingStartTime IS NOT NULL
+        AND divingEndTime IS NOT NULL
+        AND divingStartTime LIKE '__:__'
+        AND divingEndTime LIKE '__:__'
+        AND LENGTH(divingStartTime) = 5
+        AND LENGTH(divingEndTime) = 5
+    ''');
+
+    if (result.isNotEmpty && result.first['total_minutes'] != null) {
+      return result.first['total_minutes'] as int;
+    }
+    return 0;
+  }
+
+  Future<int> getDiveCountWithTime() async {
+    final db = await _databaseService.database;
+
+    final result = await db.rawQuery('''
+      SELECT COUNT(*) as count
+      FROM dive_logs
+      WHERE divingStartTime IS NOT NULL
+        AND divingEndTime IS NOT NULL
+        AND divingStartTime LIKE '__:__'
+        AND divingEndTime LIKE '__:__'
+        AND LENGTH(divingStartTime) = 5
+        AND LENGTH(divingEndTime) = 5
+    ''');
+
+    if (result.isNotEmpty && result.first['count'] != null) {
+      return result.first['count'] as int;
+    }
+    return 0;
+  }
 }
