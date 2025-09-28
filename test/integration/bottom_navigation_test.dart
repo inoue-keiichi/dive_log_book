@@ -1,15 +1,25 @@
+import 'package:dive_log_book/features/statistics/statistics_screen.dart';
+import 'package:dive_log_book/main.dart';
+import 'package:dive_log_book/services/database_service.dart';
 import 'package:flutter/material.dart';
+import 'package:flutter/semantics.dart';
 import 'package:flutter_test/flutter_test.dart';
 import 'package:sqflite_common_ffi/sqflite_ffi.dart';
 
-import '../../lib/main.dart';
-import '../../lib/features/statistics/statistics_screen.dart';
-
 void main() {
+  late DatabaseService databaseService;
+  late Widget app;
+
   setUpAll(() {
     // sqlfiteの初期化
     sqfliteFfiInit();
     databaseFactory = databaseFactoryFfi;
+  });
+
+  setUp(() async {
+    databaseService = DatabaseService();
+    await databaseService.database;
+    app = MyApp(databaseService: databaseService);
   });
 
   group('Bottom Navigation Integration Test', () {
@@ -17,7 +27,7 @@ void main() {
       // This test MUST fail until bottom navigation is implemented
 
       expect(() async {
-        await tester.pumpWidget(const MyApp());
+        await tester.pumpWidget(app);
         await tester.pumpAndSettle();
 
         // 底部ナビゲーションバーの存在確認
@@ -33,7 +43,7 @@ void main() {
       // This test MUST fail until navigation is implemented
 
       expect(() async {
-        await tester.pumpWidget(const MyApp());
+        await tester.pumpWidget(app);
         await tester.pumpAndSettle();
 
         // 統計タブをタップ
@@ -50,7 +60,7 @@ void main() {
       // This test MUST fail until navigation is implemented
 
       expect(() async {
-        await tester.pumpWidget(const MyApp());
+        await tester.pumpWidget(app);
         await tester.pumpAndSettle();
 
         // 初期状態（ダイビングログリスト画面と仮定）の確認
@@ -76,7 +86,7 @@ void main() {
       // This test MUST fail until navigation state management is implemented
 
       expect(() async {
-        await tester.pumpWidget(const MyApp());
+        await tester.pumpWidget(app);
         await tester.pumpAndSettle();
 
         // 底部ナビゲーションバーを取得
@@ -99,11 +109,13 @@ void main() {
       }, throwsA(isA<Error>())); // ナビゲーション状態管理が未実装
     });
 
-    testWidgets('Material Design 3のナビゲーションスタイルが適用されている', (WidgetTester tester) async {
+    testWidgets('Material Design 3のナビゲーションスタイルが適用されている', (
+      WidgetTester tester,
+    ) async {
       // This test MUST fail until navigation styling is implemented
 
       expect(() async {
-        await tester.pumpWidget(const MyApp());
+        await tester.pumpWidget(app);
         await tester.pumpAndSettle();
 
         // Material Design 3のナビゲーションバーの確認
@@ -121,7 +133,7 @@ void main() {
       // This test MUST fail until AppBar integration is implemented
 
       expect(() async {
-        await tester.pumpWidget(const MyApp());
+        await tester.pumpWidget(app);
         await tester.pumpAndSettle();
 
         // 統計タブをタップ
@@ -129,7 +141,7 @@ void main() {
         await tester.pumpAndSettle();
 
         // AppBarのタイトル確認
-        expect(find.text('統計'), findsAtLeastOneWidget);
+        expect(find.text('統計'), findsWidgets);
         // または
         expect(find.text('ダイビング統計'), findsOneWidget);
       }, throwsA(isA<Error>())); // AppBar統合が未実装
@@ -139,7 +151,7 @@ void main() {
       // This test MUST fail until navigation handling is implemented
 
       expect(() async {
-        await tester.pumpWidget(const MyApp());
+        await tester.pumpWidget(app);
         await tester.pumpAndSettle();
 
         // 統計画面に遷移
@@ -163,7 +175,7 @@ void main() {
       // This test MUST fail until accessibility is implemented
 
       expect(() async {
-        await tester.pumpWidget(const MyApp());
+        await tester.pumpWidget(app);
         await tester.pumpAndSettle();
 
         // セマンティクス情報の確認
@@ -172,14 +184,20 @@ void main() {
 
         // タブの選択状態がセマンティクスで正しく報告される
         final statisticsTab = tester.getSemantics(find.text('統計'));
-        expect(statisticsTab.isSelected, isFalse); // 初期状態
+        expect(
+          statisticsTab.hasFlag(SemanticsFlag.isSelected),
+          isFalse,
+        ); // 初期状態
 
         // 統計タブをタップ
         await tester.tap(find.text('統計'));
         await tester.pumpAndSettle();
 
         final selectedStatisticsTab = tester.getSemantics(find.text('統計'));
-        expect(selectedStatisticsTab.isSelected, isTrue); // 選択状態
+        expect(
+          selectedStatisticsTab.hasFlag(SemanticsFlag.isSelected),
+          isTrue,
+        ); // 選択状態
       }, throwsA(isA<Error>())); // アクセシビリティが未実装
     });
   });

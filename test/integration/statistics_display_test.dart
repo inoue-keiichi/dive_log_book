@@ -1,13 +1,14 @@
+import 'package:dive_log_book/main.dart';
+import 'package:dive_log_book/models/dive_log.dart';
+import 'package:dive_log_book/repositories/divelog.dart';
+import 'package:dive_log_book/services/database_service.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_test/flutter_test.dart';
 import 'package:sqflite_common_ffi/sqflite_ffi.dart';
 
-import '../../lib/main.dart';
-import '../../lib/models/dive_log.dart';
-import '../../lib/repositories/divelog.dart';
-import '../../lib/features/statistics/statistics_screen.dart';
-
 void main() {
+  late DatabaseService databaseService;
+  late Widget app;
   late DiveLogRepository repository;
 
   setUpAll(() {
@@ -17,6 +18,10 @@ void main() {
   });
 
   setUp(() async {
+    databaseService = DatabaseService();
+    await databaseService.database;
+    app = MyApp(databaseService: databaseService);
+
     repository = DiveLogRepository();
     final db = await repository.database;
     await db.delete('dive_logs');
@@ -27,7 +32,7 @@ void main() {
       // This test MUST fail until statistics screen is implemented
 
       expect(() async {
-        await tester.pumpWidget(const MyApp());
+        await tester.pumpWidget(app);
         await tester.pumpAndSettle();
 
         // 統計画面に遷移
@@ -54,7 +59,7 @@ void main() {
       await repository.insertDiveLog(diveLog);
 
       expect(() async {
-        await tester.pumpWidget(const MyApp());
+        await tester.pumpWidget(app);
         await tester.pumpAndSettle();
 
         // 統計画面に遷移
@@ -98,7 +103,7 @@ void main() {
       }
 
       expect(() async {
-        await tester.pumpWidget(const MyApp());
+        await tester.pumpWidget(app);
         await tester.pumpAndSettle();
 
         // 統計画面に遷移
@@ -141,12 +146,12 @@ void main() {
       }
 
       expect(() async {
-        await tester.pumpWidget(const MyApp());
+        await tester.pumpWidget(app);
         await tester.pumpAndSettle();
 
         // 統計画面に遷移
         await tester.tap(find.text('統計'));
-        await teller.pumpAndSettle();
+        await tester.pumpAndSettle();
 
         // 有効なデータのみ計算されることを確認
         expect(find.text('0時間45分'), findsOneWidget); // 1つの有効レコードのみ
@@ -181,7 +186,7 @@ void main() {
       }
 
       expect(() async {
-        await tester.pumpWidget(const MyApp());
+        await tester.pumpWidget(app);
         await tester.pumpAndSettle();
 
         // 統計画面に遷移
@@ -198,7 +203,7 @@ void main() {
       // This test MUST fail until real-time updates are implemented
 
       expect(() async {
-        await tester.pumpWidget(const MyApp());
+        await tester.pumpWidget(app);
         await tester.pumpAndSettle();
 
         // 統計画面に遷移
@@ -239,7 +244,7 @@ void main() {
           await repository.insertDiveLog(diveLog);
         }
 
-        await tester.pumpWidget(const MyApp());
+        await tester.pumpWidget(app);
         await tester.pumpAndSettle();
 
         // パフォーマンス測定開始
@@ -264,7 +269,7 @@ void main() {
       // This test MUST fail until error handling is implemented
 
       expect(() async {
-        await tester.pumpWidget(const MyApp());
+        await tester.pumpWidget(app);
         await tester.pumpAndSettle();
 
         // 統計画面に遷移
