@@ -3,10 +3,10 @@ import 'package:flutter_form_builder/flutter_form_builder.dart';
 import 'package:flutter_hooks/flutter_hooks.dart';
 
 import '../../models/dive_log.dart';
-import '../../services/database_service.dart';
+import '../../repositories/divelog.dart';
 
-// ファイルレベルでDatabaseServiceのインスタンスを取得
-final _databaseService = DatabaseService();
+// ファイルレベルでDiveLogRepositoryのインスタンスを取得
+final _diveLogRepository = DiveLogRepository();
 
 /// フォームデータからDiveLogオブジェクトを作成するロジック
 DiveLog _createDiveLogFromFormData({
@@ -165,7 +165,7 @@ VoidCallback _useCreateHandler({
     );
 
     try {
-      await _databaseService.insertDiveLog(newDiveLog);
+      await _diveLogRepository.insertDiveLog(newDiveLog);
     } finally {
       isLoading.value = false;
     }
@@ -188,7 +188,7 @@ VoidCallback _useUpdateHandler({
     );
 
     try {
-      await _databaseService.updateDiveLog(updatedDiveLog);
+      await _diveLogRepository.updateDiveLog(updatedDiveLog);
     } finally {
       isLoading.value = false;
     }
@@ -223,7 +223,7 @@ VoidCallback _useDeleteHandler({
 
     if (confirmed == true && diveLogId != null) {
       try {
-        await _databaseService.deleteDiveLog(diveLogId);
+        await _diveLogRepository.deleteDiveLog(diveLogId);
         // 削除成功時はリストに戻る
         if (context.mounted) {
           Navigator.pop(context, true);
