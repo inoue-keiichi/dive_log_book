@@ -33,7 +33,7 @@ class DiveLogFormTemplate extends StatelessWidget {
         ),
         actions: [
           // 編集時のみ削除ボタンを表示
-          if (!edit && handleDelete != null)
+          if (edit && handleDelete != null)
             IconButton(icon: const Icon(Icons.delete), onPressed: handleDelete),
         ],
       ),

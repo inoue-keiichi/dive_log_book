@@ -1,24 +1,19 @@
-import 'package:flutter/material.dart';
+import 'package:dive_log_book/repositories/divelog.dart';
+import 'package:dive_log_book/services/database_service.dart';
+import 'package:hooks_riverpod/hooks_riverpod.dart';
+import 'package:riverpod_annotation/riverpod_annotation.dart';
 
-import '../services/database_service.dart';
+part 'database_service_provider.g.dart';
 
-class DatabaseServiceProvider extends InheritedWidget {
-  final DatabaseService databaseService;
+@riverpod
+DataAccessProvider dataAccess(Ref ref) {
+  return DataAccessProvider();
+}
 
-  const DatabaseServiceProvider({
-    Key? key,
-    required this.databaseService,
-    required Widget child,
-  }) : super(key: key, child: child);
+class DataAccessProvider {
+  final dbService = DatabaseService(false).open();
 
-  static DatabaseServiceProvider of(BuildContext context) {
-    final DatabaseServiceProvider? result =
-        context.dependOnInheritedWidgetOfExactType<DatabaseServiceProvider>();
-    assert(result != null, 'No DatabaseServiceProvider found in context');
-    return result!;
+  Future<DiveLogRepository> createDiveLogRepository() async {
+    return DiveLogRepository(await dbService);
   }
-
-  @override
-  bool updateShouldNotify(DatabaseServiceProvider oldWidget) =>
-      databaseService != oldWidget.databaseService;
 }

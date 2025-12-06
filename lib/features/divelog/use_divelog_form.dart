@@ -3,10 +3,7 @@ import 'package:flutter_form_builder/flutter_form_builder.dart';
 import 'package:flutter_hooks/flutter_hooks.dart';
 
 import '../../models/dive_log.dart';
-import '../../services/database_service.dart';
-
-// ファイルレベルでDatabaseServiceのインスタンスを取得
-final _databaseService = DatabaseService();
+import '../../providers/database_service_provider.dart';
 
 /// フォームデータからDiveLogオブジェクトを作成するロジック
 DiveLog _createDiveLogFromFormData({
@@ -120,23 +117,25 @@ Map<String, dynamic> _toMap(DiveLog? diveLog) {
   VoidCallback submitHandler,
   VoidCallback deleteHandler,
 })
-useDivelogForm({required BuildContext context, DiveLog? divelog}) {
+useDivelogForm(BuildContext context, DataAccessProvider da, DiveLog? divelog) {
   final formKey = useMemoized(() => GlobalKey<FormBuilderState>());
   final isLoading = useState<bool>(false);
 
   final diveLogId = divelog?.id;
   final submitHandler =
       diveLogId == null
-          ? _useCreateHandler(formKey: formKey, isLoading: isLoading)
+          ? _useCreateHandler(formKey: formKey, isLoading: isLoading, da: da)
           : _useUpdateHandler(
             formKey: formKey,
             isLoading: isLoading,
             diveLogId: diveLogId,
+            da: da,
           );
 
   final deleteHandler = _useDeleteHandler(
     diveLogId: diveLogId,
     context: context,
+    da: da,
   );
 
   final divelogInit = divelog ?? DiveLog(date: DateTime.now());
@@ -154,6 +153,7 @@ useDivelogForm({required BuildContext context, DiveLog? divelog}) {
 VoidCallback _useCreateHandler({
   required GlobalKey<FormBuilderState> formKey,
   required ValueNotifier<bool> isLoading,
+  required DataAccessProvider da,
 }) {
   return useCallback(() async {
     final formData = formKey.currentState!.value;
@@ -165,7 +165,7 @@ VoidCallback _useCreateHandler({
     );
 
     try {
-      await _databaseService.insertDiveLog(newDiveLog);
+      await (await da.createDiveLogRepository()).insertDiveLog(newDiveLog);
     } finally {
       isLoading.value = false;
     }
@@ -177,6 +177,7 @@ VoidCallback _useUpdateHandler({
   required GlobalKey<FormBuilderState> formKey,
   required ValueNotifier<bool> isLoading,
   required int diveLogId,
+  required DataAccessProvider da,
 }) {
   return useCallback(() async {
     final formData = formKey.currentState!.value;
@@ -188,7 +189,7 @@ VoidCallback _useUpdateHandler({
     );
 
     try {
-      await _databaseService.updateDiveLog(updatedDiveLog);
+      await (await da.createDiveLogRepository()).updateDiveLog(updatedDiveLog);
     } finally {
       isLoading.value = false;
     }
@@ -199,6 +200,7 @@ VoidCallback _useUpdateHandler({
 VoidCallback _useDeleteHandler({
   required int? diveLogId,
   required BuildContext context,
+  required DataAccessProvider da,
 }) {
   return useCallback(() async {
     // 削除確認ダイアログ
@@ -223,7 +225,7 @@ VoidCallback _useDeleteHandler({
 
     if (confirmed == true && diveLogId != null) {
       try {
-        await _databaseService.deleteDiveLog(diveLogId);
+        await (await da.createDiveLogRepository()).deleteDiveLog(diveLogId);
         // 削除成功時はリストに戻る
         if (context.mounted) {
           Navigator.pop(context, true);
