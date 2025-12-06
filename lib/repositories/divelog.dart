@@ -1,24 +1,14 @@
 import 'package:sqflite/sqflite.dart';
 
 import '../models/dive_log.dart';
-import '../services/database_service.dart';
 import '../utils/date_formatter.dart';
 
 class DiveLogRepository {
-  static final DiveLogRepository _instance = DiveLogRepository._internal();
-  final DatabaseService _databaseService = DatabaseService();
+  Database db;
 
-  factory DiveLogRepository() {
-    return _instance;
-  }
-
-  DiveLogRepository._internal();
-
-  // テスト用のデータベースアクセス
-  Future<Database> get database => _databaseService.database;
+  DiveLogRepository(this.db);
 
   Future<int> insertDiveLog(DiveLog diveLog) async {
-    final db = await _databaseService.database;
     return await db.insert(
       'dive_logs',
       _buildDiveLogMap(diveLog),
@@ -27,7 +17,6 @@ class DiveLogRepository {
   }
 
   Future<int> updateDiveLog(DiveLog diveLog) async {
-    final db = await _databaseService.database;
     return await db.update(
       'dive_logs',
       _buildDiveLogMap(diveLog),
@@ -37,12 +26,10 @@ class DiveLogRepository {
   }
 
   Future<int> deleteDiveLog(int id) async {
-    final db = await _databaseService.database;
     return await db.delete('dive_logs', where: 'id = ?', whereArgs: [id]);
   }
 
   Future<List<DiveLog>> getDiveLogs() async {
-    final db = await _databaseService.database;
     final List<Map<String, dynamic>> maps = await db.query(
       'dive_logs',
       orderBy: 'date DESC',
@@ -53,7 +40,6 @@ class DiveLogRepository {
   }
 
   Future<DiveLog?> getDiveLog(int id) async {
-    final db = await _databaseService.database;
     final List<Map<String, dynamic>> maps = await db.query(
       'dive_logs',
       where: 'id = ?',
@@ -132,8 +118,6 @@ class DiveLogRepository {
 
   // 統計機能拡張メソッド
   Future<int> getTotalDivingTimeMinutes() async {
-    final db = await _databaseService.database;
-
     final result = await db.rawQuery('''
       SELECT SUM(
         (CAST(substr(divingEndTime, 1, 2) AS INTEGER) * 60 +
@@ -157,8 +141,6 @@ class DiveLogRepository {
   }
 
   Future<int> getDiveCountWithTime() async {
-    final db = await _databaseService.database;
-
     final result = await db.rawQuery('''
       SELECT COUNT(*) as count
       FROM dive_logs

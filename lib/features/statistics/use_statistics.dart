@@ -1,10 +1,8 @@
-import 'dart:io';
-
 import 'package:flutter/foundation.dart';
 import 'package:flutter/widgets.dart';
 import 'package:flutter_hooks/flutter_hooks.dart';
 
-import '../../repositories/divelog.dart';
+import '../../providers/database_service_provider.dart';
 
 class StatisticsResult {
   final bool isLoading;
@@ -29,9 +27,7 @@ class DiveDuration {
   DiveDuration({required this.hour, required this.minute});
 }
 
-StatisticsResult useStatistics() {
-  final repository = DiveLogRepository();
-
+StatisticsResult useStatistics(DataAccessProvider da) {
   final isLoading = useState(true);
   final totalMinutes = useState(0);
   final diveCount = useState(0);
@@ -43,6 +39,7 @@ StatisticsResult useStatistics() {
       isLoading.value = true;
       error.value = null;
 
+      final repository = await da.createDiveLogRepository();
       final results = await Future.wait([
         repository.getTotalDivingTimeMinutes(),
         repository.getDiveCountWithTime(),

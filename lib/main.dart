@@ -1,27 +1,21 @@
 import 'package:flutter/material.dart';
+import 'package:hooks_riverpod/hooks_riverpod.dart';
 
 import 'features/divelog_list/divelog_list.dart';
 import 'features/statistics/statistics_screen.dart';
-import 'providers/database_service_provider.dart';
-import 'services/database_service.dart';
 
 void main() async {
   WidgetsFlutterBinding.ensureInitialized();
 
   // データベースの初期化
-  final databaseService = DatabaseService();
-  await databaseService.database;
+  // final databaseService = DatabaseService(false);
+  // final db = await databaseService.open();
 
-  runApp(MyApp(databaseService: databaseService));
+  runApp(const ProviderScope(child: MyApp()));
 }
 
 class MyApp extends StatelessWidget {
-  final DatabaseService databaseService;
-
-  const MyApp({
-    super.key,
-    required this.databaseService,
-  });
+  const MyApp({super.key});
 
   @override
   Widget build(BuildContext context) {
@@ -36,10 +30,7 @@ class MyApp extends StatelessWidget {
         ),
         useMaterial3: true,
       ),
-      home: DatabaseServiceProvider(
-        databaseService: databaseService,
-        child: const MainScreen(),
-      ),
+      home: MainScreen(),
     );
   }
 }
@@ -54,10 +45,7 @@ class MainScreen extends StatefulWidget {
 class _MainScreenState extends State<MainScreen> {
   int _currentIndex = 0;
 
-  final List<Widget> _screens = const [
-    DivelogList(),
-    StatisticsScreen(),
-  ];
+  final List<Widget> _screens = const [DivelogList(), StatisticsScreen()];
 
   final List<BottomNavigationBarItem> _navigationItems = const [
     BottomNavigationBarItem(
@@ -77,10 +65,7 @@ class _MainScreenState extends State<MainScreen> {
   @override
   Widget build(BuildContext context) {
     return Scaffold(
-      body: IndexedStack(
-        index: _currentIndex,
-        children: _screens,
-      ),
+      body: IndexedStack(index: _currentIndex, children: _screens),
       bottomNavigationBar: BottomNavigationBar(
         currentIndex: _currentIndex,
         onTap: (index) {
