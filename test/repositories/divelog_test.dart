@@ -1,4 +1,5 @@
 import 'package:dive_log_book/models/dive_log.dart';
+import 'package:dive_log_book/providers/database_service_provider.dart';
 import 'package:dive_log_book/repositories/divelog.dart';
 import 'package:flutter_test/flutter_test.dart';
 import 'package:sqflite_common_ffi/sqflite_ffi.dart';
@@ -6,6 +7,7 @@ import 'package:sqflite_common_ffi/sqflite_ffi.dart';
 void main() {
   group('DiveLogRepository', () {
     late DiveLogRepository diveLogRepository;
+    late DataAccessProvider dataAccess;
 
     setUpAll(() {
       // テスト環境でFFIを初期化
@@ -13,24 +15,24 @@ void main() {
       databaseFactory = databaseFactoryFfi;
     });
 
-    setUp(() {
-      diveLogRepository = DiveLogRepository();
+    setUp(() async {
+      dataAccess = DataAccessProvider();
+      diveLogRepository = await dataAccess.createDiveLogRepository();
     });
 
     tearDown(() async {
       // 各テスト後にテストデータをクリア
-      final db = await diveLogRepository.database;
-      await db.delete('dive_logs');
+      await diveLogRepository.db.delete('dive_logs');
     });
 
     test('データベースが正しく初期化される', () async {
-      final db = await diveLogRepository.database;
+      final db = diveLogRepository.db;
       expect(db, isNotNull);
       expect(db.isOpen, true);
     });
 
     test('テーブルが正しく作成される', () async {
-      final db = await diveLogRepository.database;
+      final db = diveLogRepository.db;
 
       // テーブルの存在確認
       final tableExists = await db.rawQuery(

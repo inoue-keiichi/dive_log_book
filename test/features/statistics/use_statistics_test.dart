@@ -2,7 +2,6 @@ import 'package:dive_log_book/features/statistics/use_statistics.dart';
 import 'package:dive_log_book/models/dive_log.dart';
 import 'package:dive_log_book/providers/database_service_provider.dart';
 import 'package:dive_log_book/repositories/divelog.dart';
-import 'package:dive_log_book/services/database_service.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_hooks/flutter_hooks.dart';
 import 'package:flutter_test/flutter_test.dart';
@@ -10,7 +9,7 @@ import 'package:sqflite_common_ffi/sqflite_ffi.dart';
 
 void main() {
   late DiveLogRepository repository;
-  late DatabaseService databaseService;
+  late DataAccessProvider dataAccess;
 
   setUpAll(() {
     // sqlfiteの初期化
@@ -19,9 +18,9 @@ void main() {
   });
 
   setUp(() async {
-    databaseService = DatabaseService();
-    repository = DiveLogRepository();
-    final db = await repository.database;
+    dataAccess = DataAccessProvider();
+    repository = await dataAccess.createDiveLogRepository();
+    final db = repository.db;
     await db.delete('dive_logs');
   });
 
@@ -31,15 +30,12 @@ void main() {
 
       await tester.pumpWidget(
         MaterialApp(
-          home: DatabaseServiceProvider(
-            databaseService: databaseService,
-            child: HookBuilder(
-              builder: (context) {
-                final result = useStatistics();
-                isLoading = result.isLoading;
-                return const SizedBox();
-              },
-            ),
+          home: HookBuilder(
+            builder: (context) {
+              final result = useStatistics(dataAccess);
+              isLoading = result.isLoading;
+              return const SizedBox();
+            },
           ),
         ),
       );
@@ -55,18 +51,15 @@ void main() {
 
       await tester.pumpWidget(
         MaterialApp(
-          home: DatabaseServiceProvider(
-            databaseService: databaseService,
-            child: HookBuilder(
-              builder: (context) {
-                final result = useStatistics();
-                isLoading = result.isLoading;
-                totalMinutes = result.totalMinutes;
-                diveCount = result.diveCount;
+          home: HookBuilder(
+            builder: (context) {
+              final result = useStatistics(dataAccess);
+              isLoading = result.isLoading;
+              totalMinutes = result.totalMinutes;
+              diveCount = result.diveCount;
 
-                return const SizedBox();
-              },
-            ),
+              return const SizedBox();
+            },
           ),
         ),
       );
@@ -107,18 +100,15 @@ void main() {
 
       await tester.pumpWidget(
         MaterialApp(
-          home: DatabaseServiceProvider(
-            databaseService: databaseService,
-            child: HookBuilder(
-              builder: (context) {
-                final result = useStatistics();
-                isLoading = result.isLoading;
-                totalMinutes = result.totalMinutes;
-                diveCount = result.diveCount;
+          home: HookBuilder(
+            builder: (context) {
+              final result = useStatistics(dataAccess);
+              isLoading = result.isLoading;
+              totalMinutes = result.totalMinutes;
+              diveCount = result.diveCount;
 
-                return const SizedBox();
-              },
-            ),
+              return const SizedBox();
+            },
           ),
         ),
       );
@@ -136,16 +126,13 @@ void main() {
 
       await tester.pumpWidget(
         MaterialApp(
-          home: DatabaseServiceProvider(
-            databaseService: databaseService,
-            child: HookBuilder(
-              builder: (context) {
-                final result = useStatistics();
-                error = result.error;
+          home: HookBuilder(
+            builder: (context) {
+              final result = useStatistics(dataAccess);
+              error = result.error;
 
-                return const SizedBox();
-              },
-            ),
+              return const SizedBox();
+            },
           ),
         ),
       );
@@ -171,16 +158,13 @@ void main() {
 
       await tester.pumpWidget(
         MaterialApp(
-          home: DatabaseServiceProvider(
-            databaseService: databaseService,
-            child: HookBuilder(
-              builder: (context) {
-                final result = useStatistics();
-                diveDuration = result.diveDuration;
+          home: HookBuilder(
+            builder: (context) {
+              final result = useStatistics(dataAccess);
+              diveDuration = result.diveDuration;
 
-                return const SizedBox();
-              },
-            ),
+              return const SizedBox();
+            },
           ),
         ),
       );

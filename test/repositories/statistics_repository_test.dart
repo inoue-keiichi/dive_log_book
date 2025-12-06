@@ -1,12 +1,12 @@
+import 'package:dive_log_book/models/dive_log.dart';
+import 'package:dive_log_book/providers/database_service_provider.dart';
+import 'package:dive_log_book/repositories/divelog.dart';
 import 'package:flutter_test/flutter_test.dart';
 import 'package:sqflite_common_ffi/sqflite_ffi.dart';
 
-import '../../lib/models/dive_log.dart';
-import '../../lib/repositories/divelog.dart';
-import '../../lib/services/database_service.dart';
-
 void main() {
   late DiveLogRepository repository;
+  late DataAccessProvider dataAccess;
 
   setUpAll(() {
     // sqlfiteの初期化
@@ -16,9 +16,9 @@ void main() {
 
   setUp(() async {
     // テスト前にデータベースを初期化
-    repository = DiveLogRepository();
-    final db = await repository.database;
-    await db.delete('dive_logs'); // 既存データをクリア
+    dataAccess = DataAccessProvider();
+    repository = await dataAccess.createDiveLogRepository();
+    await repository.db.delete('dive_logs'); // 既存データをクリア
   });
 
   group('StatisticsRepository契約テスト', () {

@@ -1,15 +1,16 @@
 import 'package:dive_log_book/main.dart';
 import 'package:dive_log_book/models/dive_log.dart';
+import 'package:dive_log_book/providers/database_service_provider.dart';
 import 'package:dive_log_book/repositories/divelog.dart';
-import 'package:dive_log_book/services/database_service.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_test/flutter_test.dart';
+import 'package:hooks_riverpod/hooks_riverpod.dart';
 import 'package:sqflite_common_ffi/sqflite_ffi.dart';
 
 void main() {
-  late DatabaseService databaseService;
   late Widget app;
   late DiveLogRepository repository;
+  late DataAccessProvider dataAccess;
 
   setUpAll(() {
     // sqlfiteの初期化
@@ -18,13 +19,12 @@ void main() {
   });
 
   setUp(() async {
-    databaseService = DatabaseService();
-    await databaseService.database;
-    app = MyApp(databaseService: databaseService);
-
-    repository = DiveLogRepository();
-    final db = await repository.database;
+    dataAccess = DataAccessProvider();
+    repository = await dataAccess.createDiveLogRepository();
+    final db = repository.db;
     await db.delete('dive_logs');
+
+    app = const ProviderScope(child: MyApp());
   });
 
   group('Statistics Display Integration Test', () {

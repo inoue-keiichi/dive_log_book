@@ -1,19 +1,23 @@
 import 'package:dive_log_book/features/statistics/statistics_screen.dart';
-import 'package:dive_log_book/providers/database_service_provider.dart';
-import 'package:dive_log_book/services/database_service.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_test/flutter_test.dart';
+import 'package:hooks_riverpod/hooks_riverpod.dart';
+import 'package:sqflite_common_ffi/sqflite_ffi.dart';
 
 void main() {
+  setUpAll(() {
+    sqfliteFfiInit();
+    databaseFactory = databaseFactoryFfi;
+  });
+
   group('StatisticsScreen Widget Test', () {
     testWidgets('統計画面が正しく表示される', (WidgetTester tester) async {
       // This test MUST fail until StatisticsScreen is implemented
       expect(() {
         return tester.pumpWidget(
-          MaterialApp(
-            home: DatabaseServiceProvider(
-              databaseService: DatabaseService(),
-              child: const StatisticsScreen(),
+          const ProviderScope(
+            child: MaterialApp(
+              home: StatisticsScreen(),
             ),
           ),
         );
@@ -28,10 +32,9 @@ void main() {
 
       expect(() async {
         await tester.pumpWidget(
-          MaterialApp(
-            home: DatabaseServiceProvider(
-              databaseService: DatabaseService(),
-              child: const StatisticsScreen(),
+          const ProviderScope(
+            child: MaterialApp(
+              home: StatisticsScreen(),
             ),
           ),
         );
@@ -47,10 +50,9 @@ void main() {
 
       expect(() async {
         await tester.pumpWidget(
-          MaterialApp(
-            home: DatabaseServiceProvider(
-              databaseService: DatabaseService(),
-              child: const StatisticsScreen(),
+          const ProviderScope(
+            child: MaterialApp(
+              home: StatisticsScreen(),
             ),
           ),
         );
@@ -66,10 +68,9 @@ void main() {
 
       expect(() async {
         await tester.pumpWidget(
-          MaterialApp(
-            home: DatabaseServiceProvider(
-              databaseService: DatabaseService(),
-              child: const StatisticsScreen(),
+          const ProviderScope(
+            child: MaterialApp(
+              home: StatisticsScreen(),
             ),
           ),
         );
@@ -84,11 +85,10 @@ void main() {
 
       expect(() async {
         await tester.pumpWidget(
-          MaterialApp(
-            theme: ThemeData(useMaterial3: true),
-            home: DatabaseServiceProvider(
-              databaseService: DatabaseService(),
-              child: const StatisticsScreen(),
+          ProviderScope(
+            child: MaterialApp(
+              theme: ThemeData(useMaterial3: true),
+              home: const StatisticsScreen(),
             ),
           ),
         );
@@ -105,10 +105,9 @@ void main() {
 
       expect(() async {
         await tester.pumpWidget(
-          MaterialApp(
-            home: DatabaseServiceProvider(
-              databaseService: DatabaseService(),
-              child: const StatisticsScreen(),
+          const ProviderScope(
+            child: MaterialApp(
+              home: StatisticsScreen(),
             ),
           ),
         );
@@ -126,10 +125,9 @@ void main() {
       expect(() async {
         // データベースエラーを模擬
         await tester.pumpWidget(
-          MaterialApp(
-            home: DatabaseServiceProvider(
-              databaseService: DatabaseService(),
-              child: const StatisticsScreen(),
+          const ProviderScope(
+            child: MaterialApp(
+              home: StatisticsScreen(),
             ),
           ),
         );

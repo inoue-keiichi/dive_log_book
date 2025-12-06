@@ -8,8 +8,17 @@ class DatabaseService {
   DatabaseService(this.test);
 
   Future<Database> open() async {
+    // テスト環境の場合はインメモリデータベースを使用
+    if (const bool.fromEnvironment('FLUTTER_TEST', defaultValue: false)) {
+      return await openDatabase(
+        inMemoryDatabasePath,
+        version: 1,
+        onCreate: _onCreate,
+      );
+    }
+
     final dbDirectory = await getApplicationSupportDirectory();
-    final dbName = this.test ? "dive_log_book_for_test.db" : "dive_log_book.db";
+    final dbName = test ? "dive_log_book_for_test.db" : "dive_log_book.db";
     final path = join(dbDirectory.path, dbName);
     return await openDatabase(path, version: 1, onCreate: _onCreate);
   }
