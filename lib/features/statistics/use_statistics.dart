@@ -1,22 +1,19 @@
 import 'package:flutter/foundation.dart';
-import 'package:flutter/widgets.dart';
 import 'package:flutter_hooks/flutter_hooks.dart';
 
 import '../../providers/database_service_provider.dart';
 
 class StatisticsResult {
-  final bool isLoading;
-  final int totalMinutes;
-  final int diveCount;
-  final String? error;
-  final DiveDuration diveDuration;
+  final ValueNotifier<bool> isLoading;
+  final ValueNotifier<DiveDuration> diveDuration;
+  final ValueNotifier<int> diveCount;
+  final ValueNotifier<String?> error;
 
   StatisticsResult({
     required this.isLoading,
-    required this.totalMinutes,
-    required this.diveCount,
-    this.error,
     required this.diveDuration,
+    required this.diveCount,
+    required this.error,
   });
 }
 
@@ -29,10 +26,10 @@ class DiveDuration {
 
 StatisticsResult useStatistics(DataAccessProvider da) {
   final isLoading = useState(true);
-  final totalMinutes = useState(0);
+  final diveDuration = useState<DiveDuration>(DiveDuration(hour: 0, minute: 0));
   final diveCount = useState(0);
   final error = useState<String?>(null);
-  final isScreenVisible = useState(true);
+  // final isScreenVisible = useState(true);
 
   Future<void> loadStatistics() async {
     try {
@@ -45,7 +42,7 @@ StatisticsResult useStatistics(DataAccessProvider da) {
         repository.getDiveCountWithTime(),
       ]);
 
-      totalMinutes.value = results[0];
+      diveDuration.value = _getDiveDuration(results[0]);
       diveCount.value = results[1];
     } catch (e) {
       error.value = '統計データの読み込みに失敗しました: ${e.toString()}';
@@ -59,57 +56,24 @@ StatisticsResult useStatistics(DataAccessProvider da) {
 
   // 画面の可視性を監視してデータを再読み込み
   useEffect(() {
-    void onAppStateChange() {
-      final currentLifecycleState = WidgetsBinding.instance.lifecycleState;
-      final wasVisible = isScreenVisible.value;
-      final isNowVisible = currentLifecycleState == AppLifecycleState.resumed;
-
-      isScreenVisible.value = isNowVisible;
-
-      // 画面が非表示から表示に変わった場合に再読み込み
-      if (!wasVisible && isNowVisible) {
-        loadStatistics();
-      }
-    }
-
-    // アプリライフサイクルの監視
-    final observer = _LifecycleObserver(onAppStateChange);
-    WidgetsBinding.instance.addObserver(observer);
-
     // 初回読み込み
     loadStatistics();
-
-    return () {
-      WidgetsBinding.instance.removeObserver(observer);
-    };
+    return null;
   }, []);
 
-  DiveDuration getDiveDuration(int minutes) {
-    if (minutes <= 0) return DiveDuration(hour: 0, minute: 0);
-
-    final hours = minutes ~/ 60;
-    final remainingMinutes = minutes % 60;
-
-    return DiveDuration(hour: hours, minute: remainingMinutes);
-  }
-
   return StatisticsResult(
-    isLoading: isLoading.value,
-    totalMinutes: totalMinutes.value,
-    diveCount: diveCount.value,
-    error: error.value,
-    diveDuration: getDiveDuration(totalMinutes.value),
+    isLoading: isLoading,
+    diveDuration: diveDuration,
+    diveCount: diveCount,
+    error: error,
   );
 }
 
-// ライフサイクル監視用のObserver
-class _LifecycleObserver extends WidgetsBindingObserver {
-  final VoidCallback onAppStateChange;
+DiveDuration _getDiveDuration(int minutes) {
+  if (minutes <= 0) return DiveDuration(hour: 0, minute: 0);
 
-  _LifecycleObserver(this.onAppStateChange);
+  final hours = minutes ~/ 60;
+  final remainingMinutes = minutes % 60;
 
-  @override
-  void didChangeAppLifecycleState(AppLifecycleState state) {
-    onAppStateChange();
-  }
+  return DiveDuration(hour: hours, minute: remainingMinutes);
 }

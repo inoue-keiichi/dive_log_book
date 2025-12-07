@@ -22,10 +22,10 @@ class StatisticsScreen extends HookConsumerWidget {
         foregroundColor: Theme.of(context).colorScheme.onSurface,
       ),
       body: StatisticsTemplate(
-        isLoading: statisticsResult.isLoading,
-        diveDuration: statisticsResult.diveDuration,
-        diveCount: statisticsResult.diveCount,
-        error: statisticsResult.error,
+        isLoading: statisticsResult.isLoading.value,
+        diveDuration: statisticsResult.diveDuration.value,
+        diveCount: statisticsResult.diveCount.value,
+        error: statisticsResult.error.value,
       ),
     );
   }
