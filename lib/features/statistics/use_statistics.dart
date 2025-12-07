@@ -84,15 +84,6 @@ StatisticsResult useStatistics(DataAccessProvider da) {
     };
   }, []);
 
-  // Widgetが再描画されるたびに統計を更新（タブ切り替え対応）
-  useEffect(() {
-    // PostFrameCallbackでwidgetの構築完了後に実行
-    WidgetsBinding.instance.addPostFrameCallback((_) {
-      loadStatistics();
-    });
-    return null;
-  });
-
   DiveDuration getDiveDuration(int minutes) {
     if (minutes <= 0) return DiveDuration(hour: 0, minute: 0);
 
