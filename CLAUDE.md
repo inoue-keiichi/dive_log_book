@@ -23,10 +23,21 @@ Claude Codeは常に日本語で応答してください。
 - `flutter pub upgrade` - 依存関係をアップグレード
 
 ### テスト
+
+#### ユニット・ウィジェットテスト
+- `flutter test` - 全てのユニット・ウィジェットテストを実行
 - `flutter test test/screens/dive_log_form_screen_test.dart` - 特定のテストファイルを実行
 - テストファイルは`test/`ディレクトリに配置
 - ウィジェットテストに`flutter_test`パッケージを使用
 - データベーステストはインメモリデータベース用に`sqflite_common_ffi`を使用
+
+#### インテグレーションテスト
+- `flutter test integration_test` - 全てのインテグレーションテストを実行
+- `flutter drive --driver=test_driver/integration_test.dart --target=integration_test/bottom_navigation_test.dart` - デバイス/シミュレータで実行
+- テストファイルは`integration_test/`ディレクトリに配置
+- `integration_test`パッケージを使用（Flutter標準パッケージ）
+- 実際のデバイスやシミュレータ/エミュレータ上でアプリ全体の動作を検証
+- 詳細は`integration_test/README.md`を参照
 
 ## アーキテクチャ
 
@@ -94,7 +105,8 @@ Claude Codeは常に日本語で応答してください。
 
 ### 開発用
 - `flutter_lints` - Dart/Flutterリンティングルール
-- `flutter_test` - テストフレームワーク
+- `flutter_test` - ユニット・ウィジェットテストフレームワーク
+- `integration_test` - インテグレーションテストフレームワーク（Flutter標準）
 - `sqflite_common_ffi` - テスト用インメモリデータベース
 
 ## コードスタイルについて

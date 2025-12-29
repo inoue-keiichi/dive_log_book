@@ -39,7 +39,7 @@ StatisticsResult useStatistics(DataAccessProvider da) {
       final repository = await da.createDiveLogRepository();
       final results = await Future.wait([
         repository.getTotalDivingTimeMinutes(),
-        repository.getDiveCountWithTime(),
+        repository.getTotalDiveCount(),
       ]);
 
       diveDuration.value = _getDiveDuration(results[0]);
