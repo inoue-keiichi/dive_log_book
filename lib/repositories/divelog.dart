@@ -157,4 +157,17 @@ class DiveLogRepository {
     }
     return 0;
   }
+
+  // 全ダイビング記録の数を取得
+  Future<int> getTotalDiveCount() async {
+    final result = await db.rawQuery('''
+      SELECT COUNT(*) as count
+      FROM dive_logs
+    ''');
+
+    if (result.isNotEmpty && result.first['count'] != null) {
+      return result.first['count'] as int;
+    }
+    return 0;
+  }
 }

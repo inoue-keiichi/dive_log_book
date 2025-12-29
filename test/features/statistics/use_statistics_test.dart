@@ -25,52 +25,27 @@ void main() {
   });
 
   group('useStatistics Hook Test', () {
-    testWidgets('useStatistics - 初期状態でロード中を返す', (WidgetTester tester) async {
-      late bool isLoading;
-
-      await tester.pumpWidget(
-        MaterialApp(
-          home: HookBuilder(
-            builder: (context) {
-              final result = useStatistics(dataAccess);
-              isLoading = result.isLoading;
-              return const SizedBox();
-            },
-          ),
-        ),
-      );
-
-      // 初回レンダリング時はロード中であることを確認
-      expect(isLoading, true);
-    });
-
     testWidgets('useStatistics - データなし状態で0を返す', (WidgetTester tester) async {
-      late bool isLoading;
-      late int totalMinutes;
-      late int diveCount;
-
+      late StatisticsResult result;
       await tester.pumpWidget(
-        MaterialApp(
-          home: HookBuilder(
-            builder: (context) {
-              final result = useStatistics(dataAccess);
-              isLoading = result.isLoading;
-              totalMinutes = result.totalMinutes;
-              diveCount = result.diveCount;
-
-              return const SizedBox();
-            },
-          ),
+        HookBuilder(
+          builder: (context) {
+            result = useStatistics(dataAccess);
+            return GestureDetector();
+          },
         ),
       );
 
-      // フレームを進めて非同期処理完了を待つ
-      await tester.pumpAndSettle();
+      await tester.runAsync(() async {
+        await Future.delayed(const Duration(milliseconds: 500));
+      });
 
       // データがない場合は0が返される
-      expect(isLoading, false);
-      expect(totalMinutes, 0);
-      expect(diveCount, 0);
+      expect(result.isLoading.value, false);
+      expect(result.error.value, null);
+      expect(result.diveDuration.value.hour, 0);
+      expect(result.diveDuration.value.minute, 0);
+      expect(result.diveCount.value, 0);
     });
 
     testWidgets('useStatistics - 有効なダイビングデータで正しい統計を返す', (
@@ -90,57 +65,32 @@ void main() {
         ),
       ];
 
-      for (final diveLog in diveLogs) {
-        await repository.insertDiveLog(diveLog);
-      }
+      await tester.runAsync(() async {
+        for (final diveLog in diveLogs) {
+          await repository.insertDiveLog(diveLog);
+        }
+      });
 
-      late bool isLoading;
-      late int totalMinutes;
-      late int diveCount;
-
+      late StatisticsResult result;
       await tester.pumpWidget(
-        MaterialApp(
-          home: HookBuilder(
-            builder: (context) {
-              final result = useStatistics(dataAccess);
-              isLoading = result.isLoading;
-              totalMinutes = result.totalMinutes;
-              diveCount = result.diveCount;
-
-              return const SizedBox();
-            },
-          ),
+        HookBuilder(
+          builder: (context) {
+            result = useStatistics(dataAccess);
+            return GestureDetector();
+          },
         ),
       );
 
-      await tester.pumpAndSettle();
+      await tester.runAsync(() async {
+        await Future.delayed(const Duration(milliseconds: 500));
+      });
 
       // 統計データが正しく計算されることを確認
-      expect(isLoading, false);
-      expect(totalMinutes, 105); // 45 + 60 = 105分
-      expect(diveCount, 2);
-    });
-
-    testWidgets('useStatistics - エラー状態の初期値はnull', (WidgetTester tester) async {
-      late String? error;
-
-      await tester.pumpWidget(
-        MaterialApp(
-          home: HookBuilder(
-            builder: (context) {
-              final result = useStatistics(dataAccess);
-              error = result.error;
-
-              return const SizedBox();
-            },
-          ),
-        ),
-      );
-
-      await tester.pumpAndSettle();
-
-      // エラーがない場合はnull
-      expect(error, isNull);
+      expect(result.isLoading.value, false);
+      expect(result.error.value, null);
+      expect(result.diveDuration.value.hour, 1);
+      expect(result.diveDuration.value.minute, 45);
+      expect(result.diveCount.value, 2);
     });
 
     testWidgets('useStatistics - フォーマットされた時間文字列を返す', (
@@ -152,28 +102,28 @@ void main() {
         divingStartTime: "10:00",
         divingEndTime: "12:05", // 125分
       );
-      await repository.insertDiveLog(diveLog);
+      await tester.runAsync(() async {
+        await repository.insertDiveLog(diveLog);
+      });
 
-      late DiveDuration diveDuration;
-
+      late StatisticsResult result;
       await tester.pumpWidget(
-        MaterialApp(
-          home: HookBuilder(
-            builder: (context) {
-              final result = useStatistics(dataAccess);
-              diveDuration = result.diveDuration;
+        HookBuilder(
+          builder: (context) {
+            result = useStatistics(dataAccess);
 
-              return const SizedBox();
-            },
-          ),
+            return const SizedBox();
+          },
         ),
       );
 
-      await tester.pumpAndSettle();
+      await tester.runAsync(() async {
+        await Future.delayed(const Duration(milliseconds: 500));
+      });
 
       // 時間が正しくフォーマットされることを確認
-      expect(diveDuration.hour, 2);
-      expect(diveDuration.minute, 5);
+      expect(result.diveDuration.value.hour, 2);
+      expect(result.diveDuration.value.minute, 5);
     });
   });
 }

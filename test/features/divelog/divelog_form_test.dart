@@ -3,11 +3,22 @@ import 'package:dive_log_book/models/dive_log.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_form_builder/flutter_form_builder.dart';
 import 'package:flutter_test/flutter_test.dart';
+import 'package:hooks_riverpod/hooks_riverpod.dart';
+import 'package:sqflite_common_ffi/sqflite_ffi.dart';
 
 void main() {
+  setUpAll(() {
+    sqfliteFfiInit();
+    databaseFactory = databaseFactoryFfi;
+  });
+
   group('DiveLogForm', () {
     testWidgets('新規作成フォームが正しく表示される', (WidgetTester tester) async {
-      await tester.pumpWidget(MaterialApp(home: const DiveLogForm()));
+      await tester.pumpWidget(
+        const ProviderScope(
+          child: MaterialApp(home: DiveLogForm()),
+        ),
+      );
 
       // アプリバーのタイトルが正しく表示される
       expect(find.text('新規ダイブログ'), findsOneWidget);
@@ -39,7 +50,9 @@ void main() {
       );
 
       await tester.pumpWidget(
-        MaterialApp(home: DiveLogForm(diveLog: existingDiveLog)),
+        ProviderScope(
+          child: MaterialApp(home: DiveLogForm(diveLog: existingDiveLog)),
+        ),
       );
 
       // アプリバーのタイトルが編集用になっている
@@ -51,20 +64,22 @@ void main() {
 
     testWidgets('戻るボタンが動作する', (WidgetTester tester) async {
       await tester.pumpWidget(
-        MaterialApp(
-          home: Scaffold(
-            body: Builder(
-              builder:
-                  (context) => ElevatedButton(
-                    onPressed:
-                        () => Navigator.push(
-                          context,
-                          MaterialPageRoute(
-                            builder: (_) => const DiveLogForm(),
+        ProviderScope(
+          child: MaterialApp(
+            home: Scaffold(
+              body: Builder(
+                builder:
+                    (context) => ElevatedButton(
+                      onPressed:
+                          () => Navigator.push(
+                            context,
+                            MaterialPageRoute(
+                              builder: (_) => const DiveLogForm(),
+                            ),
                           ),
-                        ),
-                    child: const Text('フォームを開く'),
-                  ),
+                      child: const Text('フォームを開く'),
+                    ),
+              ),
             ),
           ),
         ),
@@ -103,7 +118,9 @@ void main() {
       );
 
       await tester.pumpWidget(
-        MaterialApp(home: DiveLogForm(diveLog: existingDiveLog)),
+        ProviderScope(
+          child: MaterialApp(home: DiveLogForm(diveLog: existingDiveLog)),
+        ),
       );
 
       await tester.pumpAndSettle();
@@ -149,7 +166,11 @@ void main() {
     // });
 
     testWidgets('ラジオボタンの選択が動作する', (WidgetTester tester) async {
-      await tester.pumpWidget(MaterialApp(home: const DiveLogForm()));
+      await tester.pumpWidget(
+        const ProviderScope(
+          child: MaterialApp(home: DiveLogForm()),
+        ),
+      );
 
       await tester.pumpAndSettle();
 
@@ -185,7 +206,11 @@ void main() {
     });
 
     testWidgets('数値フィールドが正しく動作する', (WidgetTester tester) async {
-      await tester.pumpWidget(MaterialApp(home: const DiveLogForm()));
+      await tester.pumpWidget(
+        const ProviderScope(
+          child: MaterialApp(home: DiveLogForm()),
+        ),
+      );
 
       await tester.pumpAndSettle();
 
@@ -230,7 +255,11 @@ void main() {
     });
 
     testWidgets('メモフィールドが複数行で動作する', (WidgetTester tester) async {
-      await tester.pumpWidget(MaterialApp(home: const DiveLogForm()));
+      await tester.pumpWidget(
+        const ProviderScope(
+          child: MaterialApp(home: DiveLogForm()),
+        ),
+      );
 
       await tester.pumpAndSettle();
 
